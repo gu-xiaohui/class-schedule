@@ -179,8 +179,8 @@ var DAY_NAMES = ["", "周一", "周二", "周三", "周四", "周五", "周六",
 var COLORS = ["#7a9e7e", "#c98d6b", "#8a93b8", "#b0879a", "#6fa3a8", "#a3926f", "#8d8b84"];
 
 var defaultData = {
-  v: 3,
-  jump: { days: {} },   // "2026-09-10": 180 —— 每日跳绳：日期→个数(0=只记完成)
+  v: 4,
+  jump: { days: { "2026-09-08": 10, "2026-09-09": 30 } },   // "2026-09-10": 180 —— 每日跳绳：日期→个数(0=只记完成)
   classes: [
     { id: "c_read",  emoji: "📖", name: "阅读", time: "",            weekdays: [1, 3], remaining: null, billing: "postpaid", price: 45, paid: 0 },
     { id: "c_eng",   emoji: "🔤", name: "英语", time: "",            weekdays: [2, 5], remaining: null, billing: "postpaid", price: 45, paid: 0 },
@@ -200,7 +200,7 @@ function load() {
     if (!raw) return JSON.parse(JSON.stringify(defaultData));
     var d = JSON.parse(raw);
     if (!d.classes) return JSON.parse(JSON.stringify(defaultData));
-    if ((d.v || 1) < 3) {
+    if ((d.v || 1) < 2) {
       // v1 → v2：补家里学习；阅读/英语改为先上后结45元；老数据没记录则补本周初始记录
       if (!d.classes.some(function (c) { return c.id === "c_home"; })) {
         d.classes.push(JSON.parse(JSON.stringify(defaultData.classes[3])));
@@ -210,10 +210,19 @@ function load() {
         if (c.id === "c_wushu") c.billing = "prepaid";
       });
       if (!d.records || !d.records.length) d.records = JSON.parse(JSON.stringify(defaultData.records));
+    }
+    if ((d.v || 1) < 3) {
       // v2 → v3：每日跳绳
       d.jump = d.jump || { days: {} };
-      d.v = 3;
     }
+    if ((d.v || 1) < 4) {
+      // v3 → v4：补录 2026-09-08(二)10个、2026-09-09(三)30个（已有该日记录则不覆盖）
+      if (!d.jump) d.jump = { days: {} };
+      [["2026-09-08", 10], ["2026-09-09", 30]].forEach(function (p) {
+        if (d.jump.days[p[0]] === undefined) d.jump.days[p[0]] = p[1];
+      });
+    }
+    d.v = 4;
     return d;
   } catch (e) { return JSON.parse(JSON.stringify(defaultData)); }
 }
@@ -223,7 +232,7 @@ var DB = load();
 (function persistIfMigrated() {
   var raw = localStorage.getItem(KEY);
   var stale = !raw;
-  if (raw) { try { stale = (JSON.parse(raw).v || 1) < 3; } catch (e) {} }
+  if (raw) { try { stale = (JSON.parse(raw).v || 1) < 4; } catch (e) {} }
   if (stale) save();
 })();
 
