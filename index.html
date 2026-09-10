@@ -5,108 +5,299 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>兴趣班课程表</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect width='24' height='24' rx='6' fill='%23faf2e4'/><path d='M12 4.6l2.3 4.7 5.2.8-3.8 3.6.9 5.2-4.6-2.4-4.6 2.4.9-5.2-3.8-3.6 5.2-.8z' fill='none' stroke='%2333291f' stroke-width='1.6' stroke-linejoin='round'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #f6f5f2; --card: #ffffff; --ink: #2c2c2c; --muted: #8d8b84;
-    --line: #e4e2dc; --green: #417f55; --red: #8a4c46; --accent: #68614b;
+    --bg: #faf2e4; --card: #fffdf7; --ink: #33291f; --muted: #998e78;
+    --line: #e7dcc6; --green: #4e9a5f; --red: #c65b4e; --accent: #e8684a;
+    --honey: #f2b53a; --sky: #5b9bd9;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  ::selection { background: var(--honey); }
   body {
-    font-family: -apple-system, "PingFang SC", "Helvetica Neue", sans-serif;
-    background: var(--bg); color: var(--ink); line-height: 1.5;
-    max-width: 760px; margin: 0 auto; padding: 16px 14px 60px;
+    font-family: "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", sans-serif;
+    background-color: var(--bg);
+    background-image: radial-gradient(#ecdfc6 1.3px, transparent 1.3px);
+    background-size: 22px 22px;
+    color: var(--ink); line-height: 1.55;
+    max-width: 720px; margin: 0 auto; padding: 28px 16px 80px;
   }
-  header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 4px; }
-  h1 { font-size: 22px; letter-spacing: 1px; }
-  #todayStr { color: var(--muted); font-size: 13px; }
-  .sec { margin-top: 18px; }
-  .sec > h2 { font-size: 15px; color: var(--accent); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
-  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
+  h1, .sec > h2, summary, .date-badge, .day-label { font-family: "ZCOOL KuaiLe", "PingFang SC", sans-serif; font-weight: 400; }
+  :focus-visible { outline: 3px solid var(--sky); outline-offset: 2px; }
 
-  /* 今日打卡卡 */
-  .today-card { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
-  .today-card .cls { flex: 1 1 140px; }
-  .cls-emoji { font-size: 26px; margin-right: 6px; }
-  .cls-name { font-size: 17px; font-weight: 600; }
-  .cls-meta { font-size: 12px; color: var(--muted); }
-  .remaining-pill { display: inline-block; font-size: 12px; padding: 1px 9px; border-radius: 999px; color: #fff; margin-left: 6px; vertical-align: 2px; }
+  @keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+  header, .sec { animation: rise .5s cubic-bezier(.22, .8, .32, 1) both; }
+  .sec:nth-of-type(1) { animation-delay: .06s; }
+  .sec:nth-of-type(2) { animation-delay: .12s; }
+  .sec:nth-of-type(3) { animation-delay: .18s; }
+  .sec:nth-of-type(4) { animation-delay: .24s; }
+  .sec:nth-of-type(5) { animation-delay: .3s; }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+  /* ── 页头 ── */
+  header { display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+  h1 { font-size: 34px; letter-spacing: 3px; line-height: 1.2; }
+  .squiggle { display: block; width: 150px; height: 12px; margin-top: 2px; }
+  .date-badge {
+    background: var(--card); border: 2px solid var(--ink); border-radius: 12px;
+    box-shadow: 3px 3px 0 var(--ink); padding: 7px 14px; font-size: 15px;
+    letter-spacing: 1px; transform: rotate(2deg);
+  }
+
+  /* ── 分区标题：贴纸标签 ── */
+  .sec { margin-top: 30px; }
+  .sec > h2 {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 19px; letter-spacing: 1px;
+    background: var(--card); border: 2px solid var(--ink); border-radius: 12px;
+    padding: 6px 16px; box-shadow: 3px 3px 0 var(--ink);
+    transform: rotate(-1.2deg); margin-bottom: 16px;
+  }
+  .sec:nth-of-type(even) > h2 { transform: rotate(1deg); }
+
+  .card { background: var(--card); border: 2px solid var(--ink); border-radius: 18px; padding: 16px; box-shadow: 5px 5px 0 var(--ink); }
+
+  /* ── 今日打卡卡 ── */
+  .today-card { position: relative; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+  .today-card::before {
+    content: ""; position: absolute; top: -10px; left: 26px; width: 80px; height: 18px;
+    border-radius: 3px; transform: rotate(-3deg);
+    background: rgba(91, 155, 217, .45); border: 1px dashed rgba(51, 41, 31, .28);
+  }
+  .today-card:nth-child(even)::before { background: rgba(232, 104, 74, .4); left: auto; right: 26px; transform: rotate(2.5deg); }
+  .today-card .cls { flex: 1 1 150px; }
+  .cls-emoji {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 50px; height: 50px; font-size: 26px;
+    background: var(--bg); border: 2px solid var(--ink); border-radius: 15px;
+    box-shadow: 3px 3px 0 var(--ink); transform: rotate(-4deg);
+    vertical-align: middle; margin-right: 10px;
+  }
+  .cls-name { font-size: 18px; font-weight: 700; vertical-align: middle; }
+  .cls-meta { font-size: 13px; color: var(--muted); margin: 6px 0 0 62px; }
+  .remaining-pill {
+    display: inline-block; font-size: 12px; font-weight: 700; padding: 2px 10px;
+    border-radius: 999px; color: #fff; border: 2px solid var(--ink);
+    box-shadow: 2px 2px 0 var(--ink); text-shadow: 0 1px 1px rgba(0, 0, 0, .18);
+    margin-left: 8px; vertical-align: middle; transform: rotate(-3deg);
+  }
+
+  /* ── 按钮：可按下的贴纸 ── */
   .btn {
-    border: none; border-radius: 12px; padding: 12px 18px; font-size: 15px; font-weight: 600;
-    cursor: pointer; min-height: 46px; color: #fff;
+    display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+    border: 2px solid var(--ink); border-radius: 14px; padding: 12px 20px;
+    font-size: 15px; font-weight: 700; font-family: inherit;
+    cursor: pointer; min-height: 48px; color: #fff;
+    box-shadow: 3px 3px 0 var(--ink);
+    transition: transform .12s ease, box-shadow .12s ease, filter .12s ease;
   }
+  .btn:hover { filter: brightness(1.05); }
+  .btn:active { transform: translate(3px, 3px); box-shadow: 0 0 0 var(--ink); }
   .btn.attend { background: var(--green); }
-  .btn.miss { background: transparent; color: var(--muted); border: 1.5px solid var(--line); }
-  .btn.small { padding: 8px 12px; font-size: 13px; min-height: 38px; font-weight: 500; }
-  .done-note { font-size: 13px; color: var(--green); }
-  .empty { color: var(--muted); font-size: 14px; padding: 6px 2px; }
+  .btn.miss { background: var(--card); color: var(--muted); border-color: var(--line); box-shadow: 3px 3px 0 var(--line); }
+  .btn.miss:active { box-shadow: 0 0 0 var(--line); }
+  .btn.small { padding: 9px 14px; font-size: 13px; min-height: 40px; font-weight: 600; border-radius: 11px; }
+  .done-note { font-size: 14px; color: var(--green); font-weight: 600; }
+  .empty { color: var(--muted); font-size: 14px; padding: 14px; border: 2px dashed var(--line); border-radius: 14px; text-align: center; background: rgba(255, 253, 247, .6); }
+  td.empty { border: none; border-bottom: 2px dashed var(--line); text-align: left; padding: 10px 8px; }
 
-  /* 周视图 */
-  .day-row { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 10px; margin-bottom: 6px; background: var(--card); border: 1px solid var(--line); }
-  .day-row.today { border-color: var(--accent); background: #fbfaf7; }
-  .day-label { width: 44px; flex: none; font-weight: 700; font-size: 14px; }
+  /* ── 周视图：票根条 ── */
+  .day-row {
+    display: flex; align-items: center; gap: 12px; padding: 10px 14px;
+    border-radius: 14px; margin-bottom: 10px;
+    background: var(--card); border: 2px solid var(--ink); box-shadow: 3px 3px 0 var(--ink);
+  }
+  .day-row.today { background: #fff7e8; box-shadow: 3px 3px 0 var(--accent); }
+  .day-label { width: 68px; flex: none; font-size: 15px; letter-spacing: 1px; white-space: nowrap; }
   .day-row.today .day-label { color: var(--accent); }
   .chips { display: flex; flex-wrap: wrap; gap: 8px; }
-  .chip { display: inline-flex; align-items: center; gap: 5px; font-size: 14px; padding: 6px 12px; border-radius: 999px; color: #fff; }
-  .chip .t { font-size: 11px; opacity: .9; font-weight: 400; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 13px; font-weight: 600; padding: 5px 12px; border-radius: 999px;
+    color: #fff; border: 2px solid var(--ink); box-shadow: 2px 2px 0 var(--ink);
+    text-shadow: 0 1px 1px rgba(0, 0, 0, .18);
+  }
+  .chip .t { font-size: 11px; opacity: .92; font-weight: 400; }
 
-  /* 统计与管理 */
+  /* ── SVG 图标对齐 ── */
+  svg.ic { display: block; flex: none; }
+  .ic-text { display: inline-flex; align-items: center; gap: 6px; }
+  .filter-chips button { display: inline-flex; align-items: center; gap: 5px; }
+  .history-item svg.ic { display: inline; vertical-align: -2px; margin-right: 3px; }
+  .empty svg.ic { display: inline; vertical-align: -4px; }
+  .done-line { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .cls-emoji { color: var(--ink); }
+  @media (hover: hover) {
+    .today-card, .day-row { transition: transform .15s ease, box-shadow .15s ease; }
+    .today-card:hover, .day-row:hover { transform: translate(-1px, -2px); box-shadow: 6px 7px 0 var(--ink); }
+    .day-row.today:hover { box-shadow: 6px 7px 0 var(--accent); }
+  }
+
+  /* ── 折叠卡片：胶带文件夹 ── */
+  details {
+    position: relative;
+    background: var(--card); border: 2px solid var(--ink); border-radius: 18px;
+    padding: 16px 18px; box-shadow: 5px 5px 0 var(--ink);
+  }
+  details::before {
+    content: ""; position: absolute; top: -11px; left: 28px; width: 96px; height: 20px;
+    border-radius: 3px; transform: rotate(-2.5deg);
+    background: rgba(242, 181, 58, .5); border: 1px dashed rgba(51, 41, 31, .3);
+    transition: opacity .18s ease;
+  }
+  details.anim::before { opacity: 0; }
+  .sec:nth-of-type(even) details::before { background: rgba(91, 155, 217, .45); left: auto; right: 30px; transform: rotate(2deg); }
+  details > summary {
+    list-style: none; cursor: pointer; display: flex; align-items: center; gap: 8px;
+    font-size: 17px; letter-spacing: 1px; color: var(--ink);
+  }
+  details > summary::-webkit-details-marker { display: none; }
+  details > summary::after {
+    content: "＋"; margin-left: auto; font-size: 19px;
+    width: 30px; height: 30px; line-height: 26px; text-align: center; flex: none;
+    border: 2px solid var(--ink); border-radius: 10px;
+    background: var(--bg); box-shadow: 2px 2px 0 var(--ink);
+    transition: transform .2s ease;
+  }
+  details[open] > summary::after { transform: rotate(45deg); }
+  details[open] > summary { padding-bottom: 12px; border-bottom: 2px dashed var(--line); margin-bottom: 4px; }
+  @keyframes detailIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+  details[open] > *:not(summary) { animation: detailIn .32s ease both; }
+
+  /* ── 表格 ── */
   table { width: 100%; border-collapse: collapse; font-size: 14px; }
-  th, td { text-align: left; padding: 9px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
-  th { color: var(--muted); font-weight: 500; font-size: 12px; }
+  th, td { text-align: left; padding: 10px 8px; border-bottom: 2px dashed var(--line); white-space: nowrap; }
+  th { color: var(--muted); font-weight: 600; font-size: 12px; letter-spacing: 1px; }
+  tbody tr:last-child td { border-bottom: none; }
   td .ops { display: flex; gap: 6px; }
-  .link-btn { background: none; border: none; color: var(--accent); cursor: pointer; font-size: 13px; padding: 6px 8px; }
+  .link-btn { display: inline-flex; align-items: center; gap: 4px; background: none; border: none; color: var(--accent); cursor: pointer; font-size: 13px; font-weight: 600; font-family: inherit; padding: 6px 8px; border-radius: 8px; }
+  .link-btn:hover { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; }
   .link-btn.danger { color: var(--red); }
 
-  details { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; }
-  details > summary { cursor: pointer; font-weight: 600; font-size: 15px; color: var(--accent); }
-  form.add-form { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; align-items: flex-end; }
-  .field { display: flex; flex-direction: column; gap: 3px; }
-  .field label { font-size: 12px; color: var(--muted); }
+  /* ── 表单 ── */
+  form.add-form { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; align-items: flex-end; }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field label { font-size: 12px; color: var(--muted); font-weight: 600; letter-spacing: .5px; }
   input[type=text], input[type=time], input[type=number], input[type=date], select {
-    border: 1px solid var(--line); border-radius: 10px; padding: 10px; font-size: 15px; background: #fff; min-height: 44px;
+    border: 2px solid var(--line); border-radius: 12px; padding: 10px 12px;
+    font-size: 15px; font-family: inherit; color: var(--ink);
+    background: #fff; min-height: 44px;
+    transition: border-color .15s ease, box-shadow .15s ease;
   }
-  .weekday-picks { display: flex; gap: 4px; flex-wrap: wrap; }
-  .weekday-picks label { border: 1.5px solid var(--line); border-radius: 9px; padding: 8px 10px; font-size: 13px; cursor: pointer; user-select: none; }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--ink); box-shadow: 3px 3px 0 var(--honey); }
+  .weekday-picks { display: flex; gap: 6px; flex-wrap: wrap; }
+  .weekday-picks label {
+    border: 2px solid var(--line); border-radius: 11px; padding: 8px 12px;
+    font-size: 13px; font-weight: 600; cursor: pointer; user-select: none;
+    background: #fff; transition: all .15s ease;
+  }
   .weekday-picks input { display: none; }
-  .weekday-picks label:has(input:checked) { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .weekday-picks label:has(input:checked) {
+    background: var(--accent); color: #fff; border-color: var(--ink);
+    box-shadow: 2px 2px 0 var(--ink); transform: rotate(-2deg);
+  }
 
-  .history-item { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 9px 4px; border-bottom: 1px solid var(--line); font-size: 14px; }
-  .history-item .sub { color: var(--muted); font-size: 12px; }
+  /* ── 学习记录 ── */
+  .history-item { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; padding: 12px 2px; border-bottom: 2px dashed var(--line); font-size: 14px; }
+  .history-item:last-child { border-bottom: none; }
+  .history-item .sub { color: var(--muted); font-size: 12px; white-space: nowrap; }
   .note-text { color: var(--ink); font-size: 14px; margin-top: 2px; }
-  .filter-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
-  .filter-chips button { border: 1.5px solid var(--line); background: #fff; color: var(--ink); border-radius: 999px; padding: 7px 14px; font-size: 13px; cursor: pointer; }
-  .filter-chips button.on { background: var(--accent); color: #fff; border-color: var(--accent); }
-  .entry-note { background: #f8f7f4; border-radius: 10px; padding: 8px 10px; margin-top: 4px; font-size: 14px; }
-  #addEntryForm { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; align-items: flex-end; }
-  #addEntryForm textarea { flex: 1 1 100%; height: 70px; border: 1px solid var(--line); border-radius: 10px; padding: 10px; font-size: 15px; font-family: inherit; background: #fff; }
-  .tag-attend { color: var(--green); font-weight: 600; }
-  .tag-miss { color: var(--muted); }
+  .filter-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+  .filter-chips button {
+    border: 2px solid var(--line); background: #fff; color: var(--ink);
+    border-radius: 999px; padding: 7px 15px; font-size: 13px; font-weight: 600;
+    cursor: pointer; font-family: inherit; transition: all .15s ease;
+  }
+  .filter-chips button:hover { border-color: var(--ink); }
+  .filter-chips button.on { background: var(--accent); color: #fff; border-color: var(--ink); box-shadow: 2px 2px 0 var(--ink); }
+  .entry-note { background: var(--bg); border: 2px dashed var(--line); border-radius: 12px; padding: 9px 12px; margin-top: 6px; font-size: 14px; }
+  #addEntryForm { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; align-items: flex-end; }
+  #addEntryForm textarea {
+    flex: 1 1 100%; height: 76px; border: 2px solid var(--line); border-radius: 12px;
+    padding: 12px; font-size: 15px; font-family: inherit; background: #fff; resize: vertical;
+  }
+  .tag-attend { color: var(--green); font-weight: 700; }
+  .tag-miss { color: var(--muted); font-weight: 600; }
 
-  textarea { width: 100%; height: 90px; border: 1px solid var(--line); border-radius: 10px; padding: 10px; font-size: 12px; font-family: monospace; margin-top: 8px; }
-  .hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
-  .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: 24px; background: var(--ink); color: #fff; padding: 10px 20px; border-radius: 999px; font-size: 14px; opacity: 0; transition: opacity .25s; pointer-events: none; z-index: 9; }
-  .toast.show { opacity: .95; }
+  textarea {
+    width: 100%; height: 96px; border: 2px solid var(--line); border-radius: 12px;
+    padding: 12px; font-size: 12px; font-family: ui-monospace, Menlo, monospace;
+    margin-top: 10px; background: #fff; resize: vertical;
+  }
+  textarea#ioArea { margin: 12px 0; }
+  .hint { font-size: 12px; color: var(--muted); margin-top: 8px; }
+
+  .toast {
+    position: fixed; left: 50%; transform: translateX(-50%) translateY(6px); bottom: 28px;
+    background: var(--ink); color: #fff; padding: 11px 22px; border-radius: 999px;
+    font-size: 14px; font-weight: 600; opacity: 0; pointer-events: none; z-index: 9;
+    box-shadow: 3px 3px 0 rgba(51, 41, 31, .25);
+    transition: opacity .25s ease, transform .25s ease;
+  }
+  .toast.show { opacity: .97; transform: translateX(-50%) translateY(0); }
+
+  @media (max-width: 480px) {
+    body { padding: 18px 12px 70px; background-size: 18px 18px; }
+    h1 { font-size: 26px; letter-spacing: 2px; }
+    .squiggle { width: 120px; height: 10px; }
+    .date-badge { font-size: 13px; padding: 6px 11px; }
+    .sec { margin-top: 24px; }
+    .sec > h2 { font-size: 16px; padding: 5px 13px; margin-bottom: 13px; }
+    .card { padding: 13px; }
+    .today-card { gap: 10px; margin-bottom: 13px; }
+    .today-card .cls { flex: 1 1 100%; }
+    .today-card .btn { padding: 11px 14px; }
+    .today-card .btn.attend { flex: 2 1 0; }
+    .today-card .btn.miss { flex: 1 1 0; }
+    .cls-name { font-size: 17px; }
+    .cls-emoji { width: 46px; height: 46px; border-radius: 13px; }
+    .cls-meta { margin-left: 58px; }
+    .day-row { padding: 9px 12px; gap: 10px; }
+    .day-label { width: 58px; font-size: 14px; }
+    .chip { font-size: 12.5px; padding: 4px 10px; }
+    details { padding: 13px 14px; }
+    details > summary { font-size: 15.5px; }
+    th, td { padding: 8px 6px; font-size: 13px; }
+    form.add-form .field { flex: 1 1 44%; }
+    form.add-form .field input { width: 100%; }
+    #fEmoji { width: 100% !important; }
+    #addEntryForm .field { flex: 1 1 40%; }
+    #addEntryForm .field input, #addEntryForm .field select { width: 100%; }
+    #addEntryForm .field:has(button) { flex: 1 1 100%; }
+    #addEntryForm .field:has(button) .btn { width: 100%; }
+    .filter-chips button { padding: 6px 12px; font-size: 12.5px; }
+    .weekday-picks label { padding: 7px 10px; font-size: 12.5px; }
+    .toast { max-width: calc(100vw - 32px); text-align: center; }
+  }
 </style>
 </head>
 <body>
 <header>
-  <h1>兴趣班课程表</h1>
-  <div id="todayStr"></div>
+  <div>
+    <h1>兴趣班课程表</h1>
+    <svg class="squiggle" viewBox="0 0 150 12" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M3 8 Q 16 2, 30 7 T 58 7 T 86 7 T 114 7 T 147 6" fill="none" stroke="#e8684a" stroke-width="4.5" stroke-linecap="round"/>
+    </svg>
+  </div>
+  <div id="todayStr" class="date-badge"></div>
 </header>
 
 <div class="sec">
-  <h2>📍 今天的课</h2>
+  <h2><svg class="ic" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg>今天的课</h2>
   <div id="todayArea"></div>
 </div>
 
 <div class="sec">
-  <h2>🗓 每周安排</h2>
+  <h2><svg class="ic" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M4 10h16M8 3v4M16 3v4"/></svg>每周安排</h2>
   <div id="weekArea"></div>
 </div>
 
 <div class="sec">
   <details>
-    <summary>📊 课程与课时统计 · 添加 / 编辑</summary>
+    <summary><svg class="ic" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h16"/><path d="M7.5 20v-6M12 20V7M16.5 20v-9"/></svg>课程与课时统计 · 添加 / 编辑</summary>
     <div style="overflow-x:auto; margin-top: 10px;">
       <table>
         <thead><tr><th>课程</th><th>时间</th><th>周几</th><th>已上</th><th>缺勤</th><th>剩余</th><th>操作</th></tr></thead>
@@ -121,19 +312,19 @@
       <div class="field" style="flex:1 1 100%;"><label>每周哪几天</label>
         <div class="weekday-picks" id="fWeekdays"></div>
       </div>
-      <button class="btn small" type="submit" style="background:var(--accent);">＋ 添加课程</button>
+      <button class="btn small" type="submit" style="background:var(--accent);"><svg class="ic" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>添加课程</button>
     </form>
   </details>
 </div>
 
 <div class="sec">
   <details>
-    <summary>📖 学习记录 · 复习本</summary>
+    <summary><svg class="ic" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2.5"/><path d="M9 9h6M9 13h6M9 17h4"/></svg>学习记录 · 复习本</summary>
     <div class="filter-chips" id="filterChips"></div>
     <form id="addEntryForm">
       <div class="field"><label>日期</label><input type="date" id="fDate"></div>
       <div class="field"><label>哪门课</label><select id="fClass"></select></div>
-      <div class="field"><label>&nbsp;</label><button class="btn small" type="submit" style="background:var(--accent);">＋ 记一笔</button></div>
+      <div class="field"><label>&nbsp;</label><button class="btn small" type="submit" style="background:var(--accent);"><svg class="ic" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>记一笔</button></div>
       <textarea id="fNote" placeholder="今天学了什么？如：识字「大小上下」4个字；武术：马步+冲拳；英语：Unit2 单词跟读"></textarea>
     </form>
     <div id="historyArea" style="margin-top: 8px;"></div>
@@ -142,11 +333,11 @@
 
 <div class="sec">
   <details>
-    <summary>💾 备份 / 恢复（换设备用）</summary>
+    <summary><svg class="ic" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h11l3 3v13H5z"/><path d="M8.5 4v5h7V4"/><rect x="8.5" y="13" width="7" height="7"/></svg>备份 / 恢复（换设备用）</summary>
     <div style="margin-top: 10px;">
       <button class="btn small" style="background:var(--accent);" onclick="doExport()">导出数据到下方文本框</button>
       <textarea id="ioArea" placeholder="点「导出」生成数据；换设备时把内容粘贴到这里，再点「导入」"></textarea>
-      <button class="btn small miss" style="border:1.5px solid var(--line);" onclick="doImport()">导入</button>
+      <button class="btn small miss" onclick="doImport()">导入</button>
       <p class="hint">数据自动保存在当前浏览器里（本机/本设备）。换 iPad 或换浏览器时，用这里的导出/导入搬数据。</p>
     </div>
   </details>
@@ -158,7 +349,39 @@
 "use strict";
 var KEY = "interestClassTracker.v1";
 var DAY_NAMES = ["", "周一", "周二", "周三", "周四", "周五", "周六", "周日"];
-var COLORS = ["#7a9e7e", "#c98d6b", "#8a93b8", "#b0879a", "#6fa3a8", "#a3926f", "#8d8b84"];
+var COLORS = ["#df6a4f", "#d18a2d", "#4e9a5f", "#4f8fc9", "#8f6fc4", "#c9678a", "#7d8590"];
+
+/* ── 手绘 SVG 图标库（描边涂鸦风） ── */
+var ICONS = {
+  book: '<path d="M12 6.5C10 5 6.8 4.5 4 4.5v14.5c2.8 0 6 .5 8 2 2-1.5 5.2-2 8-2V4.5c-2.8 0-6 .5-8 2z"/><path d="M12 6.5V21"/>',
+  abc: '<path d="M4.5 18L8.5 5l4 13"/><path d="M5.9 13.5h5.2"/><path d="M15.5 18v-6.2a2.1 2.1 0 0 1 4.2 0V18"/><path d="M15.5 15h4.2"/>',
+  burst: '<path d="M12 2.8v3.2M12 18v3.2M2.8 12h3.2M18 12h3.2M5.2 5.2l2.3 2.3M16.5 16.5l2.3 2.3M18.8 5.2l-2.3 2.3M7.5 16.5l-2.3 2.3"/><path d="M12 9.2l.9 1.85 2 .3-1.45 1.4.35 2-1.8-.95-1.8.95.35-2-1.45-1.4 2-.3z" fill="currentColor" stroke="none"/>',
+  ball: '<circle cx="12" cy="12" r="8.3"/><path d="M12 3.7c3.2 2.8 3.2 13.8 0 16.6M4 8.8c5 2.3 11 2.3 16 0M5.6 16.9c4-1.9 8.8-1.9 12.8 0"/>',
+  home: '<path d="M4 11.2L12 4l8 7.2"/><path d="M6 9.8V20h12V9.8"/><path d="M10 20v-5.5h4V20"/>',
+  star: '<path d="M12 3.6l2.5 5.2 5.7.8-4.1 4 1 5.7-5.1-2.7-5.1 2.7 1-5.7-4.1-4 5.7-.8z"/>',
+  palette: '<path d="M12 4a8 8 0 1 0 0 16c1.5 0 2-.8 2-1.7 0-1.2-1-1.6-1-2.8 0-1 .8-1.5 2-1.5h1.5A3.5 3.5 0 0 0 20 10.5C20 6.9 16.4 4 12 4z"/><circle cx="8" cy="10.2" r="1" fill="currentColor" stroke="none"/><circle cx="11.2" cy="7.8" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="8.8" r="1" fill="currentColor" stroke="none"/>',
+  music: '<path d="M9 18.5V7l11-2.2V16"/><circle cx="6.8" cy="18.5" r="2.2"/><circle cx="17.8" cy="16" r="2.2"/><path d="M9 10.2l11-2.2"/>',
+  robot: '<rect x="5" y="9" width="14" height="10" rx="3"/><path d="M12 9V5.5"/><circle cx="12" cy="4.2" r="1.1"/><circle cx="9.5" cy="13.3" r=".9" fill="currentColor" stroke="none"/><circle cx="14.5" cy="13.3" r=".9" fill="currentColor" stroke="none"/><path d="M9.7 16.3h4.6"/>',
+  grid: '<rect x="5" y="5" width="14" height="14" rx="2"/><path d="M5 9.7h14M5 14.4h14M9.7 5v14M14.4 5v14"/>',
+  pencil: '<path d="M4 20l1-4L16.6 4.4a2.15 2.15 0 0 1 3 3L8 19z"/><path d="M14.6 6.4l3 3"/>',
+  check: '<path d="M4.5 12.5l5 5L19.5 7"/>',
+  rainbow: '<path d="M3.5 17.5a8.5 8.5 0 0 1 17 0"/><path d="M7 17.5a5 5 0 0 1 10 0"/><path d="M10.5 17.5a1.5 1.5 0 0 1 3 0"/>'
+};
+var EMOJI_ICONS = {
+  "📖": "book", "📚": "book", "📕": "book",
+  "🔤": "abc", "🅰️": "abc", "🇬🇧": "abc",
+  "🥋": "burst", "🥊": "burst", "💪": "burst",
+  "⚽": "ball", "🏀": "ball", "🏓": "ball", "🏸": "ball", "🏊": "ball",
+  "🎨": "palette", "🖌️": "palette", "🖍️": "palette",
+  "🎹": "music", "🎵": "music", "🎸": "music", "🎻": "music", "🥁": "music",
+  "🏠": "home", "⭐": "star", "🌟": "star",
+  "🤖": "robot", "🧮": "grid", "♟️": "grid", "✏️": "pencil"
+};
+function icon(name, size) {
+  size = size || 20;
+  return '<svg class="ic" viewBox="0 0 24 24" width="' + size + '" height="' + size + '" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (ICONS[name] || ICONS.star) + '</svg>';
+}
+function clsIcon(cls) { return EMOJI_ICONS[cls.emoji] || "star"; }
 
 var defaultData = {
   classes: [
@@ -266,7 +489,7 @@ function renderToday() {
   var area = document.getElementById("todayArea");
   var tw = todayWeekday();
   var list = DB.classes.filter(function (c) { return c.weekdays.indexOf(tw) !== -1; });
-  if (!list.length) { area.innerHTML = '<div class="empty">今天没有安排兴趣班，好好玩 🌈</div>'; return; }
+  if (!list.length) { area.innerHTML = '<div class="empty">今天没有安排兴趣班，好好玩 ' + icon("rainbow", 18) + '</div>'; return; }
   area.innerHTML = "";
   list.forEach(function (cls) {
     var st = classStats(cls);
@@ -276,13 +499,13 @@ function renderToday() {
     var todayNote = "";
     DB.records.forEach(function (r) { if (r.classId === cls.id && r.date === todayISO() && r.note) todayNote = r.note; });
     card.innerHTML =
-      '<div class="cls"><span class="cls-emoji">' + cls.emoji + '</span><span class="cls-name">' + cls.name + '</span>' + pill +
+      '<div class="cls"><span class="cls-emoji">' + icon(clsIcon(cls), 26) + '</span><span class="cls-name">' + cls.name + '</span>' + pill +
       '<div class="cls-meta">' + (cls.time || "时间自定") + '</div></div>' +
       (isMarkedToday(cls.id)
-        ? '<div class="done-note" style="flex:1 1 100%;"><div>今天已记 ✓' +
+        ? '<div class="done-note" style="flex:1 1 100%;"><div class="done-line">今天已记 ' + icon("check", 15) +
           (todayNote ? '：<span class="note-text">' + escapeHtml(todayNote) + "</span>" : "") +
-          '</div><button class="link-btn buji">✏️ 补记/修改今天学了什么</button></div>'
-        : '<button class="btn attend" data-a="attend">✓ 上了</button><button class="btn miss" data-a="miss">没上</button>');
+          '</div><button class="link-btn buji">' + icon("pencil", 13) + ' 补记/修改今天学了什么</button></div>'
+        : '<button class="btn attend" data-a="attend">' + icon("check", 18) + ' 上了</button><button class="btn miss" data-a="miss">没上</button>');
     card.querySelectorAll("button[data-a]").forEach(function (b) {
       b.addEventListener("click", function () { mark(cls.id, b.getAttribute("data-a")); });
     });
@@ -300,7 +523,7 @@ function renderWeek() {
     var list = DB.classes.filter(function (c) { return c.weekdays.indexOf(d) !== -1; });
     var chips = list.length
       ? list.map(function (c) {
-          return '<span class="chip" style="background:' + clsColor(c) + '">' + c.emoji + " " + c.name + (c.time ? '<span class="t">' + c.time + "</span>" : "") + "</span>";
+          return '<span class="chip" style="background:' + clsColor(c) + '">' + icon(clsIcon(c), 14) + " " + c.name + (c.time ? '<span class="t">' + c.time + "</span>" : "") + "</span>";
         }).join("")
       : '<span style="color:var(--muted);font-size:13px;">—</span>';
     html += '<div class="day-row' + (d === tw ? " today" : "") + '"><div class="day-label">' + DAY_NAMES[d] + (d === tw ? "·今" : "") + '</div><div class="chips">' + chips + "</div></div>";
@@ -315,7 +538,7 @@ function renderStats() {
     var st = classStats(cls);
     var tr = document.createElement("tr");
     tr.innerHTML =
-      "<td>" + cls.emoji + " " + cls.name + "</td>" +
+      '<td><span class="ic-text">' + icon(clsIcon(cls), 16) + " " + cls.name + "</span></td>" +
       "<td>" + (cls.time || "—") + "</td>" +
       "<td>" + (cls.weekdays.length ? cls.weekdays.map(function (w) { return DAY_NAMES[w]; }).join("、") : "—") + "</td>" +
       '<td style="color:var(--green);font-weight:600;">' + st.attend + "</td>" +
@@ -336,7 +559,7 @@ function renderHistory() {
   var chips = document.getElementById("filterChips");
   var chipsHtml = '<button data-f="all" class="' + (curFilter === "all" ? "on" : "") + '">全部</button>';
   DB.classes.forEach(function (c) {
-    chipsHtml += '<button data-f="' + c.id + '" class="' + (curFilter === c.id ? "on" : "") + '">' + c.emoji + " " + c.name + "</button>";
+    chipsHtml += '<button data-f="' + c.id + '" class="' + (curFilter === c.id ? "on" : "") + '">' + icon(clsIcon(c), 14) + " " + c.name + "</button>";
   });
   chips.innerHTML = chipsHtml;
   chips.querySelectorAll("button").forEach(function (b) {
@@ -357,12 +580,12 @@ function renderHistory() {
   list.forEach(function (x) {
     var r = x.r, realIdx = x.idx;
     var cls = DB.classes.find(function (c) { return c.id === r.classId; });
-    var name = cls ? cls.emoji + " " + cls.name : "（已删课程）";
+    var name = cls ? icon(clsIcon(cls), 15) + " " + cls.name : "（已删课程）";
     html += '<div class="history-item" style="flex-wrap:wrap;"><div style="flex:1 1 auto;">' + name +
       '　<span class="' + (r.status === "attend" ? "tag-attend" : "tag-miss") + '">' + (r.status === "attend" ? "已学" : "缺勤") + "</span>" +
       (r.note ? '<div class="entry-note">' + escapeHtml(r.note) + "</div>" : "") +
       '</div><div style="display:flex;align-items:center;gap:8px;"><span class="sub">' + fmtDateCN(r.date) + '</span>' +
-      '<button class="link-btn" onclick="editNote(' + realIdx + ')">✏️</button>' +
+      '<button class="link-btn" onclick="editNote(' + realIdx + ')">' + icon("pencil", 13) + '</button>' +
       '<button class="link-btn danger" onclick="undoRecord(' + realIdx + ')">撤销</button></div></div>';
   });
   area.innerHTML = html;
@@ -454,6 +677,54 @@ window.doImport = function () {
     DB = d; save(); renderAll(); toast("导入成功 ✓");
   } catch (e) { toast("数据格式不对，导入失败"); }
 };
+
+/* ── 折叠面板展开动画 ── */
+(function detailsAnim() {
+  var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (reduce) return;
+  document.querySelectorAll("details").forEach(function (d) {
+    var summary = d.querySelector("summary");
+    if (!summary) return;
+    summary.addEventListener("click", function (e) {
+      e.preventDefault();
+      if (d.dataset.anim) return;
+      d.dataset.anim = "1";
+      d.classList.add("anim");
+      var startH, endH, a;
+      if (d.open) {
+        startH = d.offsetHeight;
+        d.open = false;
+        endH = d.offsetHeight;
+        d.open = true;
+        d.style.overflow = "hidden";
+        a = d.animate(
+          [{ height: startH + "px" }, { height: endH + "px" }],
+          { duration: 260, easing: "cubic-bezier(.22,.8,.32,1)" }
+        );
+        a.onfinish = function () {
+          d.open = false;
+          d.style.overflow = "";
+          d.classList.remove("anim");
+          delete d.dataset.anim;
+        };
+      } else {
+        startH = d.offsetHeight;
+        d.open = true;
+        endH = d.offsetHeight;
+        d.style.overflow = "hidden";
+        a = d.animate(
+          [{ height: startH + "px" }, { height: endH + "px" }],
+          { duration: 300, easing: "cubic-bezier(.22,.8,.32,1)" }
+        );
+        a.onfinish = function () {
+          d.style.overflow = "";
+          d.classList.remove("anim");
+          delete d.dataset.anim;
+        };
+      }
+    });
+  });
+})();
 
 /* ── 初始化 ── */
 (function init() {
