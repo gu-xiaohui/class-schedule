@@ -109,7 +109,7 @@
     <summary>📊 课程与课时统计 · 添加 / 编辑</summary>
     <div style="overflow-x:auto; margin-top: 10px;">
       <table>
-        <thead><tr><th>课程</th><th>时间</th><th>周几</th><th>已上</th><th>缺勤</th><th>剩余</th><th>操作</th></tr></thead>
+        <thead><tr><th>课程</th><th>时间</th><th>周几</th><th>已上</th><th>缺勤</th><th>剩余 / 待结</th><th>操作</th></tr></thead>
         <tbody id="statsBody"></tbody>
       </table>
     </div>
@@ -117,7 +117,15 @@
       <div class="field"><label>图标</label><input type="text" id="fEmoji" value="⭐" style="width:52px;text-align:center"></div>
       <div class="field"><label>课程名</label><input type="text" id="fName" placeholder="如：围棋" required></div>
       <div class="field"><label>时间(可空)</label><input type="text" id="fTime" placeholder="17:30-18:30" style="width:130px"></div>
-      <div class="field"><label>剩余课时(可空)</label><input type="number" id="fRemain" placeholder="如 24" style="width:100px"></div>
+      <div class="field"><label>计费方式</label>
+        <select id="fBilling">
+          <option value="prepaid">课时包（有剩余节数）</option>
+          <option value="postpaid">先上后结（按次计费）</option>
+          <option value="none">不统计费用</option>
+        </select>
+      </div>
+      <div class="field"><label>剩余课时(课时包填)</label><input type="number" id="fRemain" placeholder="如 24" style="width:100px"></div>
+      <div class="field"><label>单价元/节(后结填)</label><input type="number" id="fPrice" placeholder="如 45" style="width:100px"></div>
       <div class="field" style="flex:1 1 100%;"><label>每周哪几天</label>
         <div class="weekday-picks" id="fWeekdays"></div>
       </div>
@@ -161,13 +169,18 @@ var DAY_NAMES = ["", "周一", "周二", "周三", "周四", "周五", "周六",
 var COLORS = ["#7a9e7e", "#c98d6b", "#8a93b8", "#b0879a", "#6fa3a8", "#a3926f", "#8d8b84"];
 
 var defaultData = {
+  v: 2,
   classes: [
-    { id: "c_read",  emoji: "📖", name: "阅读", time: "",            weekdays: [1, 3], remaining: null },
-    { id: "c_eng",   emoji: "🔤", name: "英语", time: "",            weekdays: [2, 5], remaining: null },
-    { id: "c_wushu", emoji: "🥋", name: "武术", time: "17:30-18:30", weekdays: [4],    remaining: 31 },
-    { id: "c_home",  emoji: "🏠", name: "家里学习", time: "", weekdays: [], remaining: null }
+    { id: "c_read",  emoji: "📖", name: "阅读", time: "",            weekdays: [1, 3], remaining: null, billing: "postpaid", price: 45, paid: 0 },
+    { id: "c_eng",   emoji: "🔤", name: "英语", time: "",            weekdays: [2, 5], remaining: null, billing: "postpaid", price: 45, paid: 0 },
+    { id: "c_wushu", emoji: "🥋", name: "武术", time: "17:30-18:30", weekdays: [4],    remaining: 31,  billing: "prepaid" },
+    { id: "c_home",  emoji: "🏠", name: "家里学习", time: "", weekdays: [], remaining: null, billing: "none" }
   ],
-  records: []   // {date:"2026-09-10", classId, status:"attend"|"miss", note}
+  records: [
+    { date: "2026-09-07", classId: "c_read", status: "miss",   note: "" },
+    { date: "2026-09-08", classId: "c_eng",  status: "attend", note: "" },
+    { date: "2026-09-09", classId: "c_read", status: "attend", note: "" }
+  ]
 };
 
 function load() {
@@ -176,14 +189,30 @@ function load() {
     if (!raw) return JSON.parse(JSON.stringify(defaultData));
     var d = JSON.parse(raw);
     if (!d.classes) return JSON.parse(JSON.stringify(defaultData));
-    if (!d.classes.some(function (c) { return c.id === "c_home"; })) {
-      d.classes.push(JSON.parse(JSON.stringify(defaultData.classes[3])));
+    if ((d.v || 1) < 2) {
+      // v1 → v2：补家里学习；阅读/英语改为先上后结45元；老数据没记录则补本周初始记录
+      if (!d.classes.some(function (c) { return c.id === "c_home"; })) {
+        d.classes.push(JSON.parse(JSON.stringify(defaultData.classes[3])));
+      }
+      d.classes.forEach(function (c) {
+        if (c.id === "c_read" || c.id === "c_eng") { c.billing = "postpaid"; c.price = 45; c.paid = c.paid || 0; }
+        if (c.id === "c_wushu") c.billing = "prepaid";
+      });
+      if (!d.records || !d.records.length) d.records = JSON.parse(JSON.stringify(defaultData.records));
+      d.v = 2;
     }
     return d;
   } catch (e) { return JSON.parse(JSON.stringify(defaultData)); }
 }
 function save() { localStorage.setItem(KEY, JSON.stringify(DB)); }
 var DB = load();
+// 老数据迁移后立即落盘，避免下次打开重复迁移判断
+(function persistIfMigrated() {
+  var raw = localStorage.getItem(KEY);
+  var stale = !raw;
+  if (raw) { try { stale = (JSON.parse(raw).v || 1) < 2; } catch (e) {} }
+  if (stale) save();
+})();
 
 function todayISO() {
   var d = new Date();
@@ -196,8 +225,18 @@ function clsColor(cls) {
 }
 function classStats(cls) {
   var attend = 0, miss = 0;
-  DB.records.forEach(function (r) { if (r.classId === cls.id) { if (r.status === "attend") attend++; else miss++; } });
-  return { attend: attend, miss: miss, remaining: cls.remaining };
+  DB.records.forEach(function (r) {
+    if (r.classId === cls.id) {
+      if (r.status === "attend") attend++;
+      else if (r.status === "miss") miss++;
+    }
+  });
+  var pending = null;
+  if (cls.billing === "postpaid") {
+    var unpaid = Math.max(0, attend - (cls.paid || 0));
+    pending = unpaid * (cls.price || 0);
+  }
+  return { attend: attend, miss: miss, remaining: cls.remaining, pending: pending, unpaid: cls.billing === "postpaid" ? Math.max(0, attend - (cls.paid || 0)) : null };
 }
 function isMarkedToday(clsId) {
   var t = todayISO();
@@ -228,15 +267,21 @@ function mark(clsId, status) {
     if (note !== null && note.trim()) rec.note = note.trim();
   }
   save(); renderAll();
-  toast(status === "attend" ? (cls.name + " 已记 ✓" + (typeof cls.remaining === "number" ? "　剩余 " + cls.remaining + " 节" : "")) : (cls.name + " 缺勤，不扣课时"));
+  var msg;
+  if (status !== "attend") msg = cls.name + " 缺勤，不扣课时";
+  else if (cls.billing === "postpaid") msg = cls.name + " 已记 ✓　待结 ¥" + classStats(cls).pending;
+  else if (typeof cls.remaining === "number") msg = cls.name + " 已记 ✓　剩余 " + cls.remaining + " 节";
+  else msg = cls.name + " 已记 ✓";
+  toast(msg);
 }
 
 function undoRecord(idx) {
   var r = DB.records[idx];
   if (!r) return;
-  var cls = DB.classes.find(function (c) { return c.id === r.classId; });
-  if (r.status === "attend" && cls && typeof cls.remaining === "number") cls.remaining += 1;
-  DB.records.splice(idx, 1);
+    var cls = DB.classes.find(function (c) { return c.id === r.classId; });
+    if (r.status === "attend" && cls && cls.billing === "prepaid" && typeof cls.remaining === "number") cls.remaining += 1;
+    if (r.status === "settle" && cls) cls.paid = Math.max(0, (cls.paid || 0) - (r.count || 0));
+    DB.records.splice(idx, 1);
   save(); renderAll(); toast("已撤销一条记录");
 }
 
@@ -272,7 +317,10 @@ function renderToday() {
     var st = classStats(cls);
     var card = document.createElement("div");
     card.className = "card today-card";
-    var pill = (typeof st.remaining === "number") ? '<span class="remaining-pill" style="background:' + clsColor(cls) + '">剩 ' + st.remaining + ' 节</span>' : "";
+    var pill;
+    if (cls.billing === "postpaid") pill = '<span class="remaining-pill" style="background:' + clsColor(cls) + '">¥' + (cls.price || 0) + "／节 · 后结</span>";
+    else if (typeof st.remaining === "number") pill = '<span class="remaining-pill" style="background:' + clsColor(cls) + '">剩 ' + st.remaining + " 节</span>";
+    else pill = "";
     var todayNote = "";
     DB.records.forEach(function (r) { if (r.classId === cls.id && r.date === todayISO() && r.note) todayNote = r.note; });
     card.innerHTML =
@@ -313,6 +361,21 @@ function renderStats() {
   body.innerHTML = "";
   DB.classes.forEach(function (cls, i) {
     var st = classStats(cls);
+    var countCell;
+    if (cls.billing === "postpaid") {
+      countCell = '<b style="color:var(--accent);">¥' + st.pending + "</b><span class='sub'>（" + st.unpaid + " 节未结）</span>";
+    } else if (typeof st.remaining === "number") {
+      countCell = "<b>" + st.remaining + "</b> 节";
+    } else {
+      countCell = "不限";
+    }
+    var ops = "";
+    if (cls.billing === "prepaid") ops += '<button class="link-btn" onclick="editRemain(' + i + ')">改剩余</button>';
+    if (cls.billing === "postpaid") {
+      ops += '<button class="link-btn" onclick="settle(' + i + ')">结算</button>';
+      ops += '<button class="link-btn" onclick="editPrice(' + i + ')">改单价</button>';
+    }
+    ops += '<button class="link-btn danger" onclick="removeClass(' + i + ')">删除</button>';
     var tr = document.createElement("tr");
     tr.innerHTML =
       "<td>" + cls.emoji + " " + cls.name + "</td>" +
@@ -320,11 +383,8 @@ function renderStats() {
       "<td>" + (cls.weekdays.length ? cls.weekdays.map(function (w) { return DAY_NAMES[w]; }).join("、") : "—") + "</td>" +
       '<td style="color:var(--green);font-weight:600;">' + st.attend + "</td>" +
       "<td>" + st.miss + "</td>" +
-      "<td>" + (typeof st.remaining === "number" ? "<b>" + st.remaining + "</b>" : "不限") + "</td>" +
-      "<td>" +
-        '<button class="link-btn" onclick="editRemain(' + i + ')">改剩余</button>' +
-        '<button class="link-btn danger" onclick="removeClass(' + i + ')">删除</button>' +
-      "</td>";
+      "<td>" + countCell + "</td>" +
+      "<td>" + ops + "</td>";
     body.appendChild(tr);
   });
   if (!DB.classes.length) body.innerHTML = '<tr><td colspan="7" class="empty">还没有课程，下面添加一个吧</td></tr>';
@@ -358,8 +418,11 @@ function renderHistory() {
     var r = x.r, realIdx = x.idx;
     var cls = DB.classes.find(function (c) { return c.id === r.classId; });
     var name = cls ? cls.emoji + " " + cls.name : "（已删课程）";
-    html += '<div class="history-item" style="flex-wrap:wrap;"><div style="flex:1 1 auto;">' + name +
-      '　<span class="' + (r.status === "attend" ? "tag-attend" : "tag-miss") + '">' + (r.status === "attend" ? "已学" : "缺勤") + "</span>" +
+    var tagHtml;
+    if (r.status === "attend") tagHtml = '<span class="tag-attend">已学</span>';
+    else if (r.status === "settle") tagHtml = '<span style="color:var(--accent);font-weight:600;">💰 已结算 ' + (r.count || "") + " 节 · ¥" + (r.amount || "") + "</span>";
+    else tagHtml = '<span class="tag-miss">缺勤</span>';
+    html += '<div class="history-item" style="flex-wrap:wrap;"><div style="flex:1 1 auto;">' + name + "　" + tagHtml +
       (r.note ? '<div class="entry-note">' + escapeHtml(r.note) + "</div>" : "") +
       '</div><div style="display:flex;align-items:center;gap:8px;"><span class="sub">' + fmtDateCN(r.date) + '</span>' +
       '<button class="link-btn" onclick="editNote(' + realIdx + ')">✏️</button>' +
@@ -402,6 +465,24 @@ window.editRemain = function (i) {
   cls.remaining = v.trim() === "" ? null : Math.max(0, parseInt(v, 10) || 0);
   save(); renderAll(); toast("已更新");
 };
+window.editPrice = function (i) {
+  var cls = DB.classes[i];
+  if (!cls) return;
+  var v = prompt("「" + cls.name + "」每节课单价（元）：", cls.price || 45);
+  if (v === null) return;
+  cls.price = Math.max(0, parseFloat(v) || 0);
+  save(); renderAll(); toast("单价已改为 ¥" + cls.price);
+};
+window.settle = function (i) {
+  var cls = DB.classes[i];
+  if (!cls) return;
+  var st = classStats(cls);
+  if (!st.unpaid) { toast("没有待结算的课时"); return; }
+  if (!confirm("「" + cls.name + "」结算 " + st.unpaid + " 节 × ¥" + (cls.price || 0) + " = ¥" + st.pending + "，确认已付清？")) return;
+  cls.paid = (cls.paid || 0) + st.unpaid;
+  DB.records.push({ date: todayISO(), classId: cls.id, status: "settle", count: st.unpaid, amount: st.pending, note: "" });
+  save(); renderAll(); toast("已结算 ¥" + st.pending);
+};
 window.removeClass = function (i) {
   var cls = DB.classes[i];
   if (!cls) return;
@@ -426,16 +507,21 @@ document.getElementById("addForm").addEventListener("submit", function (e) {
   if (!name) { toast("写个课程名吧"); return; }
   if (!weekdays.length) { toast("至少选一天"); return; }
   var remain = document.getElementById("fRemain").value.trim();
+  var billing = document.getElementById("fBilling").value;
+  var price = parseFloat(document.getElementById("fPrice").value) || 0;
   DB.classes.push({
     id: "c_" + Date.now(),
     emoji: document.getElementById("fEmoji").value.trim() || "⭐",
     name: name,
     time: document.getElementById("fTime").value.trim(),
     weekdays: weekdays,
-    remaining: remain === "" ? null : Math.max(0, parseInt(remain, 10) || 0)
+    billing: billing,
+    remaining: billing === "prepaid" && remain !== "" ? Math.max(0, parseInt(remain, 10) || 0) : null,
+    price: billing === "postpaid" ? price : undefined,
+    paid: 0
   });
   save(); renderAll();
-  document.getElementById("fName").value = ""; document.getElementById("fTime").value = ""; document.getElementById("fRemain").value = "";
+  document.getElementById("fName").value = ""; document.getElementById("fTime").value = ""; document.getElementById("fRemain").value = ""; document.getElementById("fPrice").value = "";
   toast("已添加「" + name + "」");
 });
 
