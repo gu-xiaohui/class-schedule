@@ -82,8 +82,11 @@
   .jump-stats { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 14px; color: var(--muted); margin: 6px 0 10px; }
   .jump-stats b { color: var(--ink); font-size: 16px; }
   .jump-week { display: flex; gap: 6px; }
-  .jm { flex: 1; text-align: center; padding: 8px 0; border-radius: 9px; background: #f0efec; color: var(--muted); font-size: 13px; }
-  .jm.on { background: var(--green); color: #fff; font-weight: 600; }
+  .jm { flex: 1; text-align: center; padding: 7px 0 6px; border-radius: 9px; background: #f0efec; color: var(--muted); font-size: 13px; }
+  .jm .jm-ic { display: block; font-size: 20px; line-height: 1.15; font-style: normal; }
+  .jm b { display: block; font-size: 11px; font-weight: 500; margin-top: 1px; }
+  .jm.on { background: var(--green); color: #fff; }
+  .jm.on b { font-weight: 600; }
 
   /* 打卡奖励弹层（灭火器） */
   .reward-overlay {
@@ -452,7 +455,9 @@ function jumpWeek() {
     var t = new Date(monday); t.setDate(monday.getDate() + i);
     var done = !!DB.jump.days[dstr(t)];
     if (done) n++;
-    marks += '<span class="jm ' + (done ? "on" : "") + '" title="' + dstr(t) + '">' + DAY_NAMES[i + 1].replace("周", "") + "</span>";
+    marks += '<span class="jm ' + (done ? "on" : "") + '" title="' + dstr(t) + '">' +
+      (done ? '<i class="jm-ic">🧯</i>' : "") +
+      "<b>" + DAY_NAMES[i + 1].replace("周", "") + "</b></span>";
   }
   return { n: n, marks: marks };
 }
@@ -525,7 +530,7 @@ function renderJump() {
           ? '<button class="btn miss" onclick="jumpEdit()">改个数</button><button class="btn miss" onclick="jumpUndo()">撤销</button>'
           : '<button class="btn attend" onclick="jumpCheck()">✓ 跳了</button>') +
       "</div>" +
-      '<div class="jump-stats"><span>🔥 连续 <b>' + st + "</b> 天</span><span>📅 本周 <b>" + wk.n + "</b>/7 天</span><span>📈 累计 <b>" + tot.days + "</b> 天 · <b>" + tot.sum + "</b> 个" + (tot.days ? "（日均 " + tot.avg + "）" : "") + "</span></div>" +
+      '<div class="jump-stats"><span>🔥 连续 <b>' + st + "</b> 天</span><span>📅 本周 <b>" + wk.n + "</b>/7 天</span><span>🧯 已得 <b>" + tot.days + "</b> 个灭火器 · 累计跳 <b>" + tot.sum + "</b> 个" + (tot.days ? "（日均 " + tot.avg + "）" : "") + "</span></div>" +
       '<div class="jump-week">' + wk.marks + "</div>" +
     "</div>";
 }
