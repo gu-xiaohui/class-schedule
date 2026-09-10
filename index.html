@@ -84,6 +84,22 @@
   .jump-week { display: flex; gap: 6px; }
   .jm { flex: 1; text-align: center; padding: 8px 0; border-radius: 9px; background: #f0efec; color: var(--muted); font-size: 13px; }
   .jm.on { background: var(--green); color: #fff; font-weight: 600; }
+
+  /* 打卡奖励弹层（灭火器） */
+  .reward-overlay {
+    position: fixed; inset: 0; z-index: 99;
+    background: rgba(255, 255, 255, .82); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    animation: fadeOut .3s ease 1.9s forwards; cursor: pointer;
+  }
+  .reward-emoji { font-size: 96px; line-height: 1; animation: bounceIn .7s cubic-bezier(.34,1.56,.64,1); filter: drop-shadow(0 8px 18px rgba(0,0,0,.18)); }
+  .reward-title { margin-top: 14px; font-size: 22px; font-weight: 700; color: var(--ink); animation: riseIn .5s ease .25s both; }
+  .reward-sub { margin-top: 6px; font-size: 15px; color: var(--accent); font-weight: 600; animation: riseIn .5s ease .45s both; }
+  .reward-spark { position: absolute; font-size: 26px; animation: sparkle 1.2s ease infinite alternate; }
+  @keyframes bounceIn { 0% { transform: scale(.2) rotate(-14deg); opacity: 0; } 60% { transform: scale(1.15) rotate(4deg); opacity: 1; } 100% { transform: scale(1) rotate(0); } }
+  @keyframes riseIn { from { transform: translateY(14px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  @keyframes fadeOut { to { opacity: 0; visibility: hidden; } }
+  @keyframes sparkle { from { transform: scale(.7) rotate(-12deg); opacity: .4; } to { transform: scale(1.2) rotate(10deg); opacity: 1; } }
   .tag-attend { color: var(--green); font-weight: 600; }
   .tag-miss { color: var(--muted); }
 
@@ -456,7 +472,27 @@ window.jumpCheck = function () {
   DB.jump.days[todayISO()] = n;
   save(); renderAll();
   toast("今日跳绳 ✓ " + (n || "") + (n ? " 个" : ""));
+  showJumpReward(n);
 };
+/* 打卡奖励：灭火器小英雄 */
+function showJumpReward(count) {
+  var st = jumpStreak(), tot = jumpTotal();
+  var el = document.createElement("div");
+  el.className = "reward-overlay";
+  var sparks = [
+    '<span class="reward-spark" style="left:18%;top:22%">✨</span>',
+    '<span class="reward-spark" style="right:16%;top:30%;animation-delay:.3s">🌟</span>',
+    '<span class="reward-spark" style="left:24%;bottom:26%;animation-delay:.5s">⭐</span>',
+    '<span class="reward-spark" style="right:22%;bottom:20%;animation-delay:.15s">✨</span>'
+  ].join("");
+  el.innerHTML = sparks +
+    '<div class="reward-emoji">🧯</div>' +
+    '<div class="reward-title">灭火小英雄！今日跳绳完成</div>' +
+    '<div class="reward-sub">🔥 连续 ' + st + " 天 · 今日 " + (count > 0 ? count + " 个" : "完成") + " · 累计 " + tot.sum + " 个 🎉</div>";
+  el.addEventListener("click", function () { el.remove(); });
+  document.body.appendChild(el);
+  setTimeout(function () { if (el.parentNode) el.remove(); }, 2400);
+}
 window.jumpEdit = function () {
   var cur = DB.jump.days[todayISO()];
   if (cur === undefined) return;
