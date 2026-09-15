@@ -43,11 +43,18 @@
   /* 周视图 */
   .day-row { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 10px; margin-bottom: 6px; background: var(--card); border: 1px solid var(--line); }
   .day-row.today { border-color: var(--accent); background: #fbfaf7; }
-  .day-label { width: 44px; flex: none; font-weight: 700; font-size: 14px; }
+  .day-label { width: 46px; flex: none; font-weight: 700; font-size: 14px; }
   .day-row.today .day-label { color: var(--accent); }
+  .day-date { display: block; font-size: 10px; font-weight: 400; color: var(--muted); margin-top: 1px; }
   .chips { display: flex; flex-wrap: wrap; gap: 8px; }
-  .chip { display: inline-flex; align-items: center; gap: 5px; font-size: 14px; padding: 6px 12px; border-radius: 999px; color: #fff; }
+  .chip { display: inline-flex; align-items: center; gap: 5px; font-size: 14px; padding: 6px 12px; border-radius: 999px; color: #fff; cursor: pointer; }
   .chip .t { font-size: 11px; opacity: .9; font-weight: 400; }
+
+  /* 课程记录弹层 */
+  .class-modal { position: fixed; inset: 0; z-index: 60; background: rgba(0,0,0,.45); display: flex; align-items: flex-end; justify-content: center; }
+  .class-sheet { background: #fff; border-radius: 18px 18px 0 0; width: 100%; max-width: 760px; max-height: 78vh; overflow-y: auto; padding: 14px 16px 30px; }
+  .class-sheet h3 { display: flex; justify-content: space-between; align-items: center; font-size: 17px; margin-bottom: 6px; }
+  .class-sheet .close-x { background: none; border: none; font-size: 20px; color: var(--muted); cursor: pointer; padding: 4px 8px; }
 
   /* 统计与管理 */
   table { width: 100%; border-collapse: collapse; font-size: 14px; }
@@ -407,18 +414,56 @@ function renderToday() {
 function renderWeek() {
   var area = document.getElementById("weekArea");
   var tw = todayWeekday();
+  var now = new Date();
+  var monday = new Date(now);
+  monday.setDate(now.getDate() - ((now.getDay() === 0 ? 7 : now.getDay()) - 1));
   var html = "";
   for (var d = 1; d <= 7; d++) {
     var list = DB.classes.filter(function (c) { return c.weekdays.indexOf(d) !== -1; });
+    var t = new Date(monday); t.setDate(monday.getDate() + (d - 1));
+    var dateStr = (t.getMonth() + 1) + "/" + t.getDate();
     var chips = list.length
       ? list.map(function (c) {
-          return '<span class="chip" style="background:' + clsColor(c) + '">' + c.emoji + " " + c.name + (c.time ? '<span class="t">' + c.time + "</span>" : "") + "</span>";
+          return '<span class="chip" style="background:' + clsColor(c) + '" onclick="showClassRecords(\'' + c.id + '\')" title="点看学习记录">' + c.emoji + " " + c.name + (c.time ? '<span class="t">' + c.time + "</span>" : "") + "</span>";
         }).join("")
       : '<span style="color:var(--muted);font-size:13px;">—</span>';
-    html += '<div class="day-row' + (d === tw ? " today" : "") + '"><div class="day-label">' + DAY_NAMES[d] + (d === tw ? "·今" : "") + '</div><div class="chips">' + chips + "</div></div>";
+    html += '<div class="day-row' + (d === tw ? " today" : "") + '"><div class="day-label">' + DAY_NAMES[d] + (d === tw ? "·今" : "") + '<span class="day-date">' + dateStr + "</span></div><div class=\"chips\">" + chips + "</div></div>";
   }
   area.innerHTML = html;
 }
+
+/* 点课程标签：弹窗看这门课的学习记录 */
+window.showClassRecords = function (clsId) {
+  var cls = DB.classes.find(function (c) { return c.id === clsId; });
+  if (!cls) return;
+  var list = DB.records.map(function (r, i) { return { r: r, idx: i }; })
+    .filter(function (x) { return x.r.classId === clsId; });
+  list.sort(function (a, b) { return a.r.date < b.r.date ? 1 : (a.r.date > b.r.date ? -1 : b.idx - a.idx); });
+  var el = document.createElement("div");
+  el.className = "class-modal";
+  var itemsHtml = list.length ? "" : '<div class="empty">这门课还没有记录，去"学习记录·复习本"里＋记一笔吧</div>';
+  var st = classStats(cls);
+  var billLine = cls.billing === "postpaid"
+    ? "已上 " + st.attend + " 节 · 待结 ¥" + st.pending
+    : (typeof st.remaining === "number" ? "已上 " + st.attend + " 节 · 剩 " + st.remaining + " 节" : "已上 " + st.attend + " 节");
+  list.forEach(function (x) {
+    var r = x.r;
+    var tag = r.status === "attend" ? '<span class="tag-attend">已学</span>'
+      : r.status === "settle" ? '<span style="color:var(--accent);font-weight:600;">💰 已结算 ' + (r.count || "") + " 节</span>"
+      : '<span class="tag-miss">缺勤</span>';
+    itemsHtml += '<div class="history-item" style="flex-wrap:wrap;"><div style="flex:1 1 auto;">' +
+      tag + (r.note ? '<div class="entry-note">' + escapeHtml(r.note) + "</div>" : "") + "</div>" +
+      '<span class="sub">' + fmtDateCN(r.date) + "</span>" +
+      '<div class="thumbs" id="modal_thumbs_' + x.idx + '"></div></div>';
+  });
+  el.innerHTML = '<div class="class-sheet"><h3><span>' + cls.emoji + " " + cls.name + '　<span class="sub">' + billLine + '</span></span><button class="close-x">✕</button></h3>' + itemsHtml + "</div>";
+  el.addEventListener("click", function (e) { if (e.target === el) el.remove(); });
+  el.querySelector(".close-x").addEventListener("click", function () { el.remove(); });
+  document.body.appendChild(el);
+  list.forEach(function (x) {
+    if (x.r.photos && x.r.photos.length) fillThumbsTo("modal_thumbs_" + x.idx, x.r.photos);
+  });
+};
 
 function renderStats() {
   var body = document.getElementById("statsBody");
@@ -663,8 +708,8 @@ window.addPhotosTo = function (idx) {
   };
   inp.click();
 };
-async function fillThumbs(idx, photos) {
-  var box = document.getElementById("thumbs_" + idx);
+async function fillThumbsTo(containerId, photos) {
+  var box = document.getElementById(containerId);
   if (!box) return;
   for (var i = 0; i < photos.length; i++) {
     var blob = await imgGet(photos[i]);
@@ -674,6 +719,9 @@ async function fillThumbs(idx, photos) {
     (function (id) { im.addEventListener("click", function () { viewPhoto(id); }); })(photos[i]);
     box.appendChild(im);
   }
+}
+async function fillThumbs(idx, photos) {
+  fillThumbsTo("thumbs_" + idx, photos);
 }
 
 var curFilter = "all";
