@@ -177,6 +177,7 @@
       <button class="btn small" style="background:var(--accent);" onclick="addCardGroup()">＋ 新建分组</button>
       <button class="btn small attend" onclick="startReview('all')">▶ 开始复习（全部）</button>
       <button class="btn small miss" onclick="startReview('unknown')">▶ 只复习不会的</button>
+      <button class="btn small miss" style="border:1.5px solid var(--line);" onclick="importCloudCards()">☁️ 导入云端字卡包</button>
     </div>
     <div class="hint" id="cardsStats"></div>
     <div id="cardsArea"></div>
@@ -818,6 +819,34 @@ window.toggleKnown = function (gi, ci) {
   c.known = !c.known;
   save(); renderCards();
 };
+/* 云端字卡包：从本站 cards-pack.json 一键导入 */
+async function importCardsPack(data) {
+  if (!data.groups || !data.groups.length) throw new Error("空包");
+  if (!confirm("导入字卡 " + data.groups.map(function (g) { return "「" + g.name + "」" + g.cards.length + " 张"; }).join("、") + "？现有数据不受影响。")) return false;
+  toast("正在导入照片（多时稍等）…");
+  var entries = Object.entries(data.photos || {});
+  for (var k = 0; k < entries.length; k++) {
+    var bb = await dataURLtoBlob(entries[k][1]);
+    if (bb) await imgPutWithId(bb, entries[k][0]);
+  }
+  data.groups.forEach(function (g) { DB.cards.groups.push(g); });
+  save(); renderAll();
+  toast("字卡导入完成 ✓ 共 " + entries.length + " 张");
+  return true;
+}
+window.importCloudCards = async function () {
+  toast("正在获取云端字卡包…");
+  try {
+    var resp = await fetch("cards-pack.json", { cache: "no-store" });
+    if (!resp.ok) throw new Error("无包");
+    var data = await resp.json();
+    if (data.app !== "classSchedule" || !data.cardsOnly) throw new Error("格式");
+    await importCardsPack(data);
+  } catch (e) {
+    toast("云端暂无字卡包或获取失败");
+  }
+};
+
 /* 大图浏览：点卡片放大，上一张/下一张翻页 */
 window.viewCard = function (gi, ci) {
   var g = DB.cards.groups[gi];
