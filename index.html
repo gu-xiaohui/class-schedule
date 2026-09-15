@@ -1127,7 +1127,23 @@ window.importBackup = function () {
     if (!f) return;
     try {
       var data = JSON.parse(await f.text());
-      if (data.app !== "classSchedule" || !data.db || !data.db.classes) throw new Error("格式");
+      if (data.app !== "classSchedule") throw new Error("格式");
+      // 字卡导入包：只合并识字卡片分组和照片，不动其他数据
+      if (data.cardsOnly) {
+        if (!data.groups || !data.groups.length) throw new Error("空包");
+        if (!confirm("导入字卡 " + data.groups.map(function (g) { return "「" + g.name + "」" + g.cards.length + " 张"; }).join("、") + "？现有数据不受影响。")) return;
+        toast("正在导入照片（多时稍等）…");
+        var entries = Object.entries(data.photos || {});
+        for (var k = 0; k < entries.length; k++) {
+          var bb = await dataURLtoBlob(entries[k][1]);
+          if (bb) await imgPutWithId(bb, entries[k][0]);
+        }
+        data.groups.forEach(function (g) { DB.cards.groups.push(g); });
+        save(); renderAll();
+        toast("字卡导入完成 ✓ 共 " + entries.length + " 张");
+        return;
+      }
+      if (!data.db || !data.db.classes) throw new Error("格式");
       if (!confirm("将用备份覆盖本机当前数据（含照片），确定恢复？")) return;
       toast("正在恢复照片…");
       var entries = Object.entries(data.photos || {});
