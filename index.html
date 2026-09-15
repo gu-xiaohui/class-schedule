@@ -234,7 +234,12 @@
       <button class="btn small" style="background:var(--accent);" onclick="doExport()">导出数据到下方文本框</button>
       <textarea id="ioArea" placeholder="点「导出」生成数据；换设备时把内容粘贴到这里，再点「导入」"></textarea>
       <button class="btn small miss" style="border:1.5px solid var(--line);" onclick="doImport()">导入</button>
-      <p class="hint">数据自动保存在当前浏览器里（本机/本设备）。换 iPad 或换浏览器时，用这里的导出/导入搬数据。<b>照片存在本机、不随文本备份转移</b>（换设备后照片需重新添加）。</p>
+      <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn small attend" onclick="exportBackup()">📦 导出备份文件（含照片）</button>
+        <button class="btn small miss" style="border:1.5px solid var(--line);" onclick="importBackup()">📥 从备份文件恢复</button>
+      </div>
+      <p class="hint">数据自动保存在当前浏览器里（本机/本设备）。换 iPad 或换浏览器时，用这里的导出/导入搬数据。</p>
+      <p class="hint"><b>备份文件（含照片）</b>：一键打包全部记录、课时、跳绳、识字卡片和照片成一个文件——手机导出后可 AirDrop 到电脑或存"文件"App；在电脑浏览器打开本页点「从备份文件恢复」，电脑上就有完整一份。</p>
     </div>
   </details>
 </div>
@@ -1069,6 +1074,74 @@ document.getElementById("addForm").addEventListener("submit", function (e) {
 });
 
 /* ── 备份 ── */
+function blobToDataURL(blob) {
+  return new Promise(function (resolve) {
+    var fr = new FileReader();
+    fr.onload = function () { resolve(fr.result); };
+    fr.onerror = function () { resolve(null); };
+    fr.readAsDataURL(blob);
+  });
+}
+async function dataURLtoBlob(durl) {
+  try { return await (await fetch(durl)).blob(); } catch (e) { return null; }
+}
+function imgPutWithId(blob, id) {
+  return new Promise(function (resolve) {
+    if (!imgDB) { resolve(false); return; }
+    try {
+      var tx = imgDB.transaction("photos", "readwrite");
+      tx.objectStore("photos").put(blob, id);
+      tx.oncomplete = function () { resolve(true); };
+      tx.onerror = function () { resolve(false); };
+    } catch (e) { resolve(false); }
+  });
+}
+window.exportBackup = async function () {
+  toast("正在打包（照片多时稍等）…");
+  var ids = {};
+  DB.records.forEach(function (r) { (r.photos || []).forEach(function (id) { ids[id] = 1; }); });
+  DB.cards.groups.forEach(function (g) { g.cards.forEach(function (c) { ids[c.img] = 1; }); });
+  var photos = {};
+  var keys = Object.keys(ids);
+  for (var i = 0; i < keys.length; i++) {
+    var b = await imgGet(keys[i]);
+    if (b) photos[keys[i]] = await blobToDataURL(b);
+  }
+  var pack = { app: "classSchedule", exportedAt: todayISO(), db: DB, photos: photos };
+  var blob = new Blob([JSON.stringify(pack)], { type: "application/json" });
+  var d = new Date();
+  var name = "kechengbiao_" + d.getFullYear() + String(d.getMonth() + 1).padStart(2, "0") + String(d.getDate()).padStart(2, "0") + ".json";
+  var a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  toast("已导出 " + name + "（" + keys.length + " 张照片）");
+};
+window.importBackup = function () {
+  var inp = document.createElement("input");
+  inp.type = "file"; inp.accept = ".json,application/json";
+  inp.onchange = async function () {
+    var f = inp.files && inp.files[0];
+    if (!f) return;
+    try {
+      var data = JSON.parse(await f.text());
+      if (data.app !== "classSchedule" || !data.db || !data.db.classes) throw new Error("格式");
+      if (!confirm("将用备份覆盖本机当前数据（含照片），确定恢复？")) return;
+      toast("正在恢复照片…");
+      var entries = Object.entries(data.photos || {});
+      for (var i = 0; i < entries.length; i++) {
+        var b = await dataURLtoBlob(entries[i][1]);
+        if (b) await imgPutWithId(b, entries[i][0]);
+      }
+      DB = data.db;
+      save(); renderAll();
+      toast("恢复完成 ✓（" + entries.length + " 张照片）");
+    } catch (e) { toast("备份文件不对，恢复失败"); }
+  };
+  inp.click();
+};
 window.doExport = function () {
   document.getElementById("ioArea").value = JSON.stringify(DB);
   document.getElementById("ioArea").select();
