@@ -144,6 +144,9 @@
   .review-ov .rv-btns { display: flex; gap: 14px; width: 100%; max-width: 480px; }
   .review-ov .rv-btns .btn { flex: 1; font-size: 17px; min-height: 54px; }
   .review-ov .rv-close { position: absolute; top: 14px; right: 16px; background: none; border: none; color: #8b938d; font-size: 22px; cursor: pointer; }
+  .cv-nav { display: flex; gap: 10px; width: 100%; max-width: 520px; }
+  .cv-nav .btn { flex: 1; font-size: 16px; min-height: 50px; }
+  .cv-nav .btn.mid { flex: 1.2; }
 </style>
 </head>
 <body>
@@ -815,6 +818,57 @@ window.toggleKnown = function (gi, ci) {
   c.known = !c.known;
   save(); renderCards();
 };
+/* 大图浏览：点卡片放大，上一张/下一张翻页 */
+window.viewCard = function (gi, ci) {
+  var g = DB.cards.groups[gi];
+  if (!g || !g.cards[ci]) return;
+  var old = document.querySelector(".review-ov[data-cv]");
+  if (old) old.remove();
+  var ov = document.createElement("div");
+  ov.className = "review-ov";
+  ov.setAttribute("data-cv", "1");
+  var c = g.cards[ci];
+  ov.innerHTML = '<button class="rv-close">✕</button>' +
+    '<div class="rv-count" id="cvCount"></div>' +
+    '<div class="rv-img-box" id="cvImgBox"></div>' +
+    '<div class="cv-nav">' +
+      '<button class="btn miss" style="border:1.5px solid #4a524c;" id="cvPrev">‹ 上一张</button>' +
+      '<button class="btn mid attend" id="cvKnown"></button>' +
+      '<button class="btn miss" style="border:1.5px solid #4a524c;" id="cvNext">下一张 ›</button>' +
+    "</div>";
+  document.body.appendChild(ov);
+  function refresh() {
+    document.getElementById("cvCount").textContent = g.name + "　" + (ci + 1) + " / " + g.cards.length;
+    var kb = document.getElementById("cvKnown");
+    kb.textContent = c.known ? "✓ 已会（点取消）" : "✗ 标记为会";
+    var box = document.getElementById("cvImgBox");
+    box.innerHTML = "";
+    imgGet(c.img).then(function (blob) {
+      if (!blob) return;
+      var im = document.createElement("img");
+      im.src = URL.createObjectURL(blob);
+      box.appendChild(im);
+    });
+  }
+  ov.querySelector(".rv-close").addEventListener("click", function () { ov.remove(); renderCards(); });
+  document.getElementById("cvPrev").addEventListener("click", function () {
+    if (ci <= 0) { toast("已是第一张"); return; }
+    ci--; c = g.cards[ci]; refresh();
+  });
+  document.getElementById("cvNext").addEventListener("click", function () {
+    if (ci >= g.cards.length - 1) { toast("已是最后一张"); return; }
+    ci++; c = g.cards[ci]; refresh();
+  });
+  document.getElementById("cvKnown").addEventListener("click", function () {
+    c.known = !c.known;
+    save();
+    var kb = document.getElementById("cvKnown");
+    kb.textContent = c.known ? "✓ 已会（点取消）" : "✗ 标记为会";
+    renderCards();
+  });
+  refresh();
+};
+
 function renderCards() {
   var area = document.getElementById("cardsArea");
   if (!area) return;
@@ -849,7 +903,7 @@ function renderCards() {
       });
       cell.addEventListener("click", function (e) {
         if (e.target.className === "del") { delCard(gi, ci); return; }
-        toggleKnown(gi, ci);
+        viewCard(gi, ci);
       });
       grid.appendChild(cell);
     });
