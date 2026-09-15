@@ -730,7 +730,7 @@ window.editNote = function (i) {
   r.note = v.trim();
   save(); renderAll();
 };
-document.getElementById("addEntryForm").addEventListener("submit", async function (e) {
+document.getElementById("addEntryForm").addEventListener("submit", function (e) {
   e.preventDefault();
   var clsId = document.getElementById("fClass").value;
   var date = document.getElementById("fDate").value || todayISO();
@@ -738,23 +738,30 @@ document.getElementById("addEntryForm").addEventListener("submit", async functio
   var cls = DB.classes.find(function (c) { return c.id === clsId; });
   if (!cls) { toast("先添加课程"); return; }
   if (!note) { toast("写点什么吧，复习要用"); return; }
-  if (pendingPhotos.length) toast("正在保存照片…");
-  var photoIds = [];
-  for (var i = 0; i < pendingPhotos.length; i++) {
-    var b = await compressImage(pendingPhotos[i]);
-    var id = await imgPut(b);
-    if (id) photoIds.push(id);
-  }
-  pendingPhotos = [];
-  renderPendingPhotos();
-  // 预付课时课：该课当天没有已学记录时扣 1 节（补录过去日期同样生效，同天同课不重复扣）
+  // 1) 先立刻落记录（文字即时保存，不等照片）
   var alreadyThatDay = DB.records.some(function (r) { return r.classId === clsId && r.date === date && r.status === "attend"; });
-  DB.records.push({ date: date, classId: clsId, status: "attend", note: note, photos: photoIds });
+  var rec = { date: date, classId: clsId, status: "attend", note: note, photos: [] };
+  DB.records.push(rec);
   if (!alreadyThatDay && cls.billing === "prepaid" && typeof cls.remaining === "number" && cls.remaining > 0) {
     cls.remaining -= 1;
   }
   document.getElementById("fNote").value = "";
-  save(); renderAll(); toast("已记入 " + cls.name + (photoIds.length ? "（含 " + photoIds.length + " 张照片）" : ""));
+  var files = pendingPhotos.slice();
+  pendingPhotos = [];
+  renderPendingPhotos();
+  save(); renderAll();
+  toast("已记入 " + cls.name + (files.length ? "，照片保存中…" : ""));
+  // 2) 照片后台压缩入库，存好一张保存一张
+  (async function () {
+    for (var i = 0; i < files.length; i++) {
+      try {
+        var b = await compressImage(files[i]);
+        var id = await imgPut(b);
+        if (id) { rec.photos.push(id); save(); renderHistory(); }
+      } catch (err) { }
+    }
+    if (files.length) toast("照片已保存 " + rec.photos.length + " 张 📷");
+  })();
 });
 
 function renderAll() { renderToday(); renderWeek(); renderJump(); renderStats(); renderHistory(); }
