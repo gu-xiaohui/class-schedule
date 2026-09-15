@@ -110,6 +110,15 @@
   .hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
   .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: 24px; background: var(--ink); color: #fff; padding: 10px 20px; border-radius: 999px; font-size: 14px; opacity: 0; transition: opacity .25s; pointer-events: none; z-index: 9; }
   .toast.show { opacity: .95; }
+
+  /* 学习记录照片 */
+  .thumbs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .thumbs img { width: 64px; height: 64px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); cursor: zoom-in; }
+  .thumbs .add-ph { width: 64px; height: 64px; border: 1.5px dashed var(--line); border-radius: 8px; background: none; color: var(--muted); font-size: 22px; cursor: pointer; }
+  #fPhotoPrev { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  #fPhotoPrev img { width: 56px; height: 56px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); }
+  .photo-view { position: fixed; inset: 0; z-index: 99; background: rgba(0,0,0,.92); display: flex; align-items: center; justify-content: center; cursor: zoom-out; }
+  .photo-view img { max-width: 96vw; max-height: 92vh; border-radius: 6px; }
 </style>
 </head>
 <body>
@@ -170,8 +179,11 @@
     <form id="addEntryForm">
       <div class="field"><label>日期</label><input type="date" id="fDate"></div>
       <div class="field"><label>哪门课</label><select id="fClass"></select></div>
+      <div class="field"><label>&nbsp;</label><button class="btn small" type="button" onclick="document.getElementById('fPhotos').click()">📷 加照片</button></div>
       <div class="field"><label>&nbsp;</label><button class="btn small" type="submit" style="background:var(--accent);">＋ 记一笔</button></div>
       <textarea id="fNote" placeholder="今天学了什么？如：识字「大小上下」4个字；武术：马步+冲拳；英语：Unit2 单词跟读"></textarea>
+      <input type="file" id="fPhotos" accept="image/*" multiple style="display:none">
+      <div id="fPhotoPrev"></div>
     </form>
     <div id="historyArea" style="margin-top: 8px;"></div>
   </details>
@@ -184,7 +196,7 @@
       <button class="btn small" style="background:var(--accent);" onclick="doExport()">导出数据到下方文本框</button>
       <textarea id="ioArea" placeholder="点「导出」生成数据；换设备时把内容粘贴到这里，再点「导入」"></textarea>
       <button class="btn small miss" style="border:1.5px solid var(--line);" onclick="doImport()">导入</button>
-      <p class="hint">数据自动保存在当前浏览器里（本机/本设备）。换 iPad 或换浏览器时，用这里的导出/导入搬数据。</p>
+      <p class="hint">数据自动保存在当前浏览器里（本机/本设备）。换 iPad 或换浏览器时，用这里的导出/导入搬数据。<b>照片存在本机、不随文本备份转移</b>（换设备后照片需重新添加）。</p>
     </div>
   </details>
 </div>
@@ -329,10 +341,11 @@ function mark(clsId, status) {
 function undoRecord(idx) {
   var r = DB.records[idx];
   if (!r) return;
-    var cls = DB.classes.find(function (c) { return c.id === r.classId; });
-    if (r.status === "attend" && cls && cls.billing === "prepaid" && typeof cls.remaining === "number") cls.remaining += 1;
-    if (r.status === "settle" && cls) cls.paid = Math.max(0, (cls.paid || 0) - (r.count || 0));
-    DB.records.splice(idx, 1);
+  var cls = DB.classes.find(function (c) { return c.id === r.classId; });
+  if (r.status === "attend" && cls && cls.billing === "prepaid" && typeof cls.remaining === "number") cls.remaining += 1;
+  if (r.status === "settle" && cls) cls.paid = Math.max(0, (cls.paid || 0) - (r.count || 0));
+  (r.photos || []).forEach(function (id) { imgDel(id); });   // 同时清掉照片
+  DB.records.splice(idx, 1);
   save(); renderAll(); toast("已撤销一条记录");
 }
 
@@ -557,6 +570,112 @@ function renderJump() {
     "</div>";
 }
 
+/* ── 学习记录照片（IndexedDB 存储，本机保存）── */
+var imgDB = null;
+function openImgDB() {
+  return new Promise(function (resolve) {
+    var rq = indexedDB.open("classPhotos", 1);
+    rq.onupgradeneeded = function (e) { e.target.result.createObjectStore("photos"); };
+    rq.onsuccess = function (e) { imgDB = e.target.result; resolve(imgDB); };
+    rq.onerror = function () { resolve(null); };
+  });
+}
+function imgPut(blob) {
+  return new Promise(function (resolve) {
+    if (!imgDB) { resolve(null); return; }
+    var id = "img_" + Date.now() + "_" + Math.floor(Math.random() * 1e6);
+    var tx = imgDB.transaction("photos", "readwrite");
+    tx.objectStore("photos").put(blob, id);
+    tx.oncomplete = function () { resolve(id); };
+    tx.onerror = function () { resolve(null); };
+  });
+}
+function imgGet(id) {
+  return new Promise(function (resolve) {
+    if (!imgDB) { resolve(null); return; }
+    try {
+      var rq = imgDB.transaction("photos", "readonly").objectStore("photos").get(id);
+      rq.onsuccess = function () { resolve(rq.result || null); };
+      rq.onerror = function () { resolve(null); };
+    } catch (e) { resolve(null); }
+  });
+}
+function imgDel(id) {
+  try { imgDB.transaction("photos", "readwrite").objectStore("photos").delete(id); } catch (e) {}
+}
+function compressImage(file) {
+  return new Promise(function (resolve) {
+    var url = URL.createObjectURL(file);
+    var img = new Image();
+    img.onload = function () {
+      URL.revokeObjectURL(url);
+      var maxEdge = 1280;
+      var scale = Math.min(1, maxEdge / Math.max(img.width, img.height));
+      var w = Math.round(img.width * scale), h = Math.round(img.height * scale);
+      var cv = document.createElement("canvas");
+      cv.width = w; cv.height = h;
+      cv.getContext("2d").drawImage(img, 0, 0, w, h);
+      cv.toBlob(function (b) { resolve(b || file); }, "image/jpeg", 0.82);
+    };
+    img.onerror = function () { URL.revokeObjectURL(url); resolve(file); };
+    img.src = url;
+  });
+}
+var pendingPhotos = [];
+document.getElementById("fPhotos").addEventListener("change", function () {
+  var files = Array.from(this.files || []);
+  this.value = "";
+  files.forEach(function (f) { pendingPhotos.push(f); });
+  renderPendingPhotos();
+});
+function renderPendingPhotos() {
+  var box = document.getElementById("fPhotoPrev");
+  box.innerHTML = pendingPhotos.map(function (f, i) {
+    return '<img src="' + URL.createObjectURL(f) + '" onclick="removePendingPhoto(' + i + ')">';
+  }).join("");
+}
+window.removePendingPhoto = function (i) {
+  pendingPhotos.splice(i, 1);
+  renderPendingPhotos();
+};
+window.viewPhoto = function (id) {
+  imgGet(id).then(function (blob) {
+    if (!blob) { toast("图片读取失败"); return; }
+    var el = document.createElement("div");
+    el.className = "photo-view";
+    el.innerHTML = '<img src="' + URL.createObjectURL(blob) + '">';
+    el.addEventListener("click", function () { el.remove(); });
+    document.body.appendChild(el);
+  });
+};
+window.addPhotosTo = function (idx) {
+  var inp = document.createElement("input");
+  inp.type = "file"; inp.accept = "image/*"; inp.multiple = true;
+  inp.onchange = async function () {
+    var files = Array.from(inp.files || []);
+    if (!files.length) return;
+    toast("正在保存照片…");
+    var ids = [];
+    for (var f of files) { var b = await compressImage(f); var id = await imgPut(b); if (id) ids.push(id); }
+    var r = DB.records[idx];
+    if (r) { r.photos = (r.photos || []).concat(ids); save(); renderHistory(); renderToday(); }
+    toast("已添加 " + ids.length + " 张照片 📷");
+  };
+  inp.click();
+};
+async function fillThumbs(idx, photos) {
+  var box = document.getElementById("thumbs_" + idx);
+  if (!box) return;
+  for (var i = 0; i < photos.length; i++) {
+    var blob = await imgGet(photos[i]);
+    if (!blob) continue;
+    var im = document.createElement("img");
+    im.src = URL.createObjectURL(blob);
+    (function (id) { im.addEventListener("click", function () { viewPhoto(id); }); })(photos[i]);
+    box.appendChild(im);
+  }
+}
+
 var curFilter = "all";
 function renderHistory() {
   // 筛选条
@@ -592,10 +711,16 @@ function renderHistory() {
     html += '<div class="history-item" style="flex-wrap:wrap;"><div style="flex:1 1 auto;">' + name + "　" + tagHtml +
       (r.note ? '<div class="entry-note">' + escapeHtml(r.note) + "</div>" : "") +
       '</div><div style="display:flex;align-items:center;gap:8px;"><span class="sub">' + fmtDateCN(r.date) + '</span>' +
+      '<button class="link-btn" onclick="addPhotosTo(' + realIdx + ')">📷</button>' +
       '<button class="link-btn" onclick="editNote(' + realIdx + ')">✏️</button>' +
-      '<button class="link-btn danger" onclick="undoRecord(' + realIdx + ')">撤销</button></div></div>';
+      '<button class="link-btn danger" onclick="undoRecord(' + realIdx + ')">撤销</button></div>' +
+      '<div class="thumbs" id="thumbs_' + realIdx + '"></div></div>';
   });
   area.innerHTML = html;
+  // 异步填充照片缩略图
+  list.forEach(function (x) {
+    if (x.r.photos && x.r.photos.length) fillThumbs(x.idx, x.r.photos);
+  });
 }
 window.editNote = function (i) {
   var r = DB.records[i];
@@ -605,7 +730,7 @@ window.editNote = function (i) {
   r.note = v.trim();
   save(); renderAll();
 };
-document.getElementById("addEntryForm").addEventListener("submit", function (e) {
+document.getElementById("addEntryForm").addEventListener("submit", async function (e) {
   e.preventDefault();
   var clsId = document.getElementById("fClass").value;
   var date = document.getElementById("fDate").value || todayISO();
@@ -613,14 +738,23 @@ document.getElementById("addEntryForm").addEventListener("submit", function (e) 
   var cls = DB.classes.find(function (c) { return c.id === clsId; });
   if (!cls) { toast("先添加课程"); return; }
   if (!note) { toast("写点什么吧，复习要用"); return; }
+  if (pendingPhotos.length) toast("正在保存照片…");
+  var photoIds = [];
+  for (var i = 0; i < pendingPhotos.length; i++) {
+    var b = await compressImage(pendingPhotos[i]);
+    var id = await imgPut(b);
+    if (id) photoIds.push(id);
+  }
+  pendingPhotos = [];
+  renderPendingPhotos();
   // 预付课时课：该课当天没有已学记录时扣 1 节（补录过去日期同样生效，同天同课不重复扣）
   var alreadyThatDay = DB.records.some(function (r) { return r.classId === clsId && r.date === date && r.status === "attend"; });
-  DB.records.push({ date: date, classId: clsId, status: "attend", note: note });
+  DB.records.push({ date: date, classId: clsId, status: "attend", note: note, photos: photoIds });
   if (!alreadyThatDay && cls.billing === "prepaid" && typeof cls.remaining === "number" && cls.remaining > 0) {
     cls.remaining -= 1;
   }
   document.getElementById("fNote").value = "";
-  save(); renderAll(); toast("已记入 " + cls.name);
+  save(); renderAll(); toast("已记入 " + cls.name + (photoIds.length ? "（含 " + photoIds.length + " 张照片）" : ""));
 });
 
 function renderAll() { renderToday(); renderWeek(); renderJump(); renderStats(); renderHistory(); }
@@ -714,7 +848,7 @@ window.doImport = function () {
 (function init() {
   var d = new Date();
   document.getElementById("todayStr").textContent = fmtDateCN(todayISO()) + " · " + DAY_NAMES[todayWeekday()];
-  renderAll();
+  openImgDB().then(function () { renderAll(); });
 })();
 </script>
 </body>
