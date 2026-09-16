@@ -118,23 +118,6 @@
   .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: 24px; background: var(--ink); color: #fff; padding: 10px 20px; border-radius: 999px; font-size: 14px; opacity: 0; transition: opacity .25s; pointer-events: none; z-index: 9; }
   .toast.show { opacity: .95; }
 
-  /* 宽屏（iPad横屏/电脑 ≥960px）：双栏仪表盘 */
-  @media (min-width: 960px) {
-    body { max-width: 1280px; padding: 24px 28px 60px; display: grid; grid-template-columns: 1fr 1fr; gap: 4px 26px; align-items: start; font-size: 16px; }
-    header { grid-column: 1 / -1; margin-bottom: 10px; }
-    h1 { font-size: 26px; }
-    header #todayStr { font-size: 15px; }
-    .sec { margin-top: 12px; }
-    .sec-today, .sec-week, .sec-jump { grid-column: 1; }
-    .sec-cards, .sec-stats, .sec-review, .sec-backup { grid-column: 2; }
-    .card { border-radius: 16px; padding: 16px; }
-    .btn { min-height: 50px; font-size: 16px; }
-    .jm { font-size: 14px; padding: 9px 0; }
-    .thumbs img { width: 76px; height: 76px; }
-    .cg-grid .cell { width: 80px; height: 80px; }
-    .class-sheet { max-height: 82vh; }
-  }
-
   /* 学习记录照片 */
   .thumbs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
   .thumbs img { width: 64px; height: 64px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); cursor: zoom-in; }
