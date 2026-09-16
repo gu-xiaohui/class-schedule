@@ -257,7 +257,7 @@ var DAY_NAMES = ["", "周一", "周二", "周三", "周四", "周五", "周六",
 var COLORS = ["#7a9e7e", "#c98d6b", "#8a93b8", "#b0879a", "#6fa3a8", "#a3926f", "#8d8b84"];
 
 var defaultData = {
-  v: 7,
+  v: 8,
   cards: { groups: [] },   // 识字卡片：[{id, name, cards:[{img, known}]}]
   jump: { days: { "2026-09-08": 10, "2026-09-09": 30 } },   // "2026-09-10": 180 —— 每日跳绳：日期→个数(0=只记完成)
   classes: [
@@ -270,7 +270,9 @@ var defaultData = {
     { date: "2026-09-07", classId: "c_read", status: "miss",   note: "" },
     { date: "2026-09-08", classId: "c_eng",  status: "attend", note: "" },
     { date: "2026-09-09", classId: "c_read", status: "attend", note: "" },
-    { date: "2026-09-11", classId: "c_eng",  status: "attend", note: "" }
+    { date: "2026-09-10", classId: "c_wushu", status: "attend", note: "体能、侧手翻、跳绳。开始有点抵触，老师开导后好转" },
+    { date: "2026-09-11", classId: "c_eng",  status: "attend", note: "" },
+    { date: "2026-09-14", classId: "c_read", status: "attend", note: "" }
   ]
 };
 
@@ -315,7 +317,18 @@ function load() {
       // v6 → v7：识字卡片模块
       d.cards = d.cards || { groups: [] };
     }
-    d.v = 7;
+    if ((d.v || 1) < 8) {
+      // v7 → v8：补录 9/10 武术已上（同步扣课时）、9/14 阅读已上（已有则跳过）
+      var hasWushu910 = (d.records || []).some(function (r) { return r.classId === "c_wushu" && r.date === "2026-09-10"; });
+      if (!hasWushu910) {
+        d.records.push({ date: "2026-09-10", classId: "c_wushu", status: "attend", note: "体能、侧手翻、跳绳。开始有点抵触，老师开导后好转" });
+        var ws = d.classes && d.classes.filter(function (c) { return c.id === "c_wushu"; })[0];
+        if (ws && ws.billing === "prepaid" && typeof ws.remaining === "number" && ws.remaining > 0) ws.remaining -= 1;
+      }
+      var hasRead914 = (d.records || []).some(function (r) { return r.classId === "c_read" && r.date === "2026-09-14"; });
+      if (!hasRead914) d.records.push({ date: "2026-09-14", classId: "c_read", status: "attend", note: "" });
+    }
+    d.v = 8;
     return d;
   } catch (e) { return JSON.parse(JSON.stringify(defaultData)); }
 }
@@ -325,7 +338,7 @@ var DB = load();
 (function persistIfMigrated() {
   var raw = localStorage.getItem(KEY);
   var stale = !raw;
-  if (raw) { try { stale = (JSON.parse(raw).v || 1) < 7; } catch (e) {} }
+  if (raw) { try { stale = (JSON.parse(raw).v || 1) < 8; } catch (e) {} }
   if (stale) save();
 })();
 
