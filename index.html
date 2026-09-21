@@ -240,6 +240,7 @@
       <button class="btn small miss" style="border:1.5px solid var(--line);" onclick="doImport()">导入</button>
       <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;">
         <button class="btn small attend" onclick="exportBackup()">📦 导出备份文件（含照片）</button>
+        <button class="btn small" style="background:var(--accent);" onclick="cloudBackupWizard()">☁️ 备份到 iCloud（推荐每周）</button>
         <button class="btn small miss" style="border:1.5px solid var(--line);" onclick="importBackup()">📥 从备份文件恢复</button>
       </div>
       <p class="hint">数据自动保存在当前浏览器里（本机/本设备）。换 iPad 或换浏览器时，用这里的导出/导入搬数据。</p>
@@ -1195,6 +1196,27 @@ function imgPutWithId(blob, id) {
     } catch (e) { resolve(false); }
   });
 }
+window.cloudBackupWizard = function () {
+  var old = document.querySelector(".class-modal[data-cloud]");
+  if (old) old.remove();
+  var el = document.createElement("div");
+  el.className = "class-modal";
+  el.setAttribute("data-cloud", "1");
+  el.innerHTML = '<div class="class-sheet"><h3><span>☁️ 备份到 iCloud（换设备不丢）</span><button class="close-x">✕</button></h3>' +
+    '<div style="font-size:14px;line-height:2">' +
+    '<b>①</b> 点下面的"开始导出"，生成备份文件（含全部记录+照片）<br>' +
+    '<b>②</b> 弹出下载面板时，选 <b>“存储到文件”</b><br>' +
+    '<b>③</b> 位置选 <b>iCloud 云盘</b>（可建个“课程表备份”文件夹，之后会记住位置）<br>' +
+    '<span style="color:var(--muted);font-size:13px">之后换 iPhone/iPad，从“文件”App 的 iCloud 云盘里就能拿回这份备份，导入即恢复。建议每周做一次。</span></div>' +
+    '<div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;">' +
+    '<button class="btn small attend" id="cloudDoExport">开始导出</button>' +
+    "</div></div>";
+  el.addEventListener("click", function (e) { if (e.target === el) el.remove(); });
+  el.querySelector(".close-x").addEventListener("click", function () { el.remove(); });
+  el.querySelector("#cloudDoExport").addEventListener("click", function () { el.remove(); exportBackup(); });
+  document.body.appendChild(el);
+};
+
 window.exportBackup = async function () {
   toast("正在打包（照片多时稍等）…");
   var ids = {};
