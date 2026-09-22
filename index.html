@@ -783,6 +783,39 @@ async function fillThumbs(idx, photos) {
   fillThumbsTo("thumbs_" + idx, photos);
 }
 
+/* ── 照片内容指纹去重 ── */
+async function photoHash(blob) {
+  try {
+    var buf = await blob.arrayBuffer();
+    var dig = await crypto.subtle.digest("SHA-256", buf);
+    return Array.from(new Uint8Array(dig)).slice(0, 16).map(function (b) { return b.toString(16).padStart(2, "0"); }).join("");
+  } catch (e) { return null; }
+}
+function cardHashExists(h) {
+  if (!h) return false;
+  var found = false;
+  DB.cards.groups.forEach(function (g) {
+    g.cards.forEach(function (c) { if (c.h === h) found = true; });
+  });
+  return found;
+}
+async function backfillCardHashes() {
+  var n = 0;
+  for (var gi = 0; gi < DB.cards.groups.length; gi++) {
+    var g = DB.cards.groups[gi];
+    for (var ci = 0; ci < g.cards.length; ci++) {
+      var c = g.cards[ci];
+      if (c.h) continue;
+      var blob = await imgGet(c.img);
+      if (!blob) continue;
+      c.h = await photoHash(blob);
+      n++;
+    }
+  }
+  if (n) save();
+  return n;
+}
+
 /* ── 识字卡片：归类 + 翻卡复习 ── */
 window.addCardGroup = function () {
   var name = prompt("分组名字，如：第一盒 / 动物 / 学校学的：");
@@ -807,16 +840,18 @@ window.addCardsToGroup = function (gi) {
     var files = Array.from(inp.files || []);
     if (!files.length) return;
     var g = DB.cards.groups[gi];
-    var done = 0;
+    var done = 0, skipped = 0;
     for (var i = 0; i < files.length; i++) {
       var b = await compressImage(files[i]);
+      var h = await photoHash(b);
+      if (cardHashExists(h)) { skipped++; continue; }
       var id = await imgPut(b);
-      if (id) g.cards.push({ img: id, known: false });
+      if (id) g.cards.push({ img: id, known: false, h: h });
       done++;
       if (done % 20 === 0 || done === files.length) { save(); renderCards(); toast("已保存 " + done + "/" + files.length + "…"); }
     }
     save(); renderCards();
-    toast("已加入「" + g.name + "」" + done + " 张 📷");
+    toast("已加入「" + g.name + "」" + done + " 张 📷" + (skipped ? "（跳过重复 " + skipped + " 张）" : ""));
   };
   inp.click();
 };
@@ -837,15 +872,26 @@ window.toggleKnown = function (gi, ci) {
 async function importCardsPack(data) {
   if (!data.groups || !data.groups.length) throw new Error("空包");
   if (!confirm("导入字卡 " + data.groups.map(function (g) { return "「" + g.name + "」" + g.cards.length + " 张"; }).join("、") + "？现有数据不受影响。")) return false;
-  toast("正在导入照片（多时稍等）…");
+  toast("正在导入照片（自动去重，多时稍等）…");
   var entries = Object.entries(data.photos || {});
+  var hashes = {};
+  var added = 0, skipped = 0, keep = {};
   for (var k = 0; k < entries.length; k++) {
     var bb = await dataURLtoBlob(entries[k][1]);
-    if (bb) await imgPutWithId(bb, entries[k][0]);
+    if (!bb) { skipped++; continue; }
+    var h = await photoHash(bb);
+    if (cardHashExists(h) || hashes[h]) { skipped++; continue; }
+    hashes[h] = 1;
+    var okPut = await imgPutWithId(bb, entries[k][0]);
+    if (okPut) { keep[entries[k][0]] = h; added++; }
   }
-  data.groups.forEach(function (g) { DB.cards.groups.push(g); });
+  data.groups.forEach(function (g) {
+    var cards = (g.cards || []).filter(function (c) { return keep[c.img] !== undefined; });
+    cards.forEach(function (c) { c.h = keep[c.img]; });
+    if (cards.length) DB.cards.groups.push({ id: g.id, name: g.name, cards: cards });
+  });
   save(); renderAll();
-  toast("字卡导入完成 ✓ 共 " + entries.length + " 张");
+  toast(added ? "字卡导入完成 ✓ 新增 " + added + " 张" + (skipped ? "，跳过重复 " + skipped + " 张" : "") : "这批卡片都已存在，无需导入");
   return true;
 }
 window.importCloudCards = async function () {
@@ -1298,7 +1344,13 @@ window.doImport = function () {
 (function init() {
   var d = new Date();
   document.getElementById("todayStr").textContent = fmtDateCN(todayISO()) + " · " + DAY_NAMES[todayWeekday()];
-  openImgDB().then(function () { renderAll(); });
+  openImgDB().then(async function () {
+    if (!DB.hashBackfilled) {
+      var n = await backfillCardHashes();
+      DB.hashBackfilled = true; save();
+    }
+    renderAll();
+  });
 })();
 </script>
 </body>
