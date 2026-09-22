@@ -258,7 +258,7 @@ var DAY_NAMES = ["", "周一", "周二", "周三", "周四", "周五", "周六",
 var COLORS = ["#7a9e7e", "#c98d6b", "#8a93b8", "#b0879a", "#6fa3a8", "#a3926f", "#8d8b84"];
 
 var defaultData = {
-  v: 8,
+  v: 9,
   cards: { groups: [] },   // 识字卡片：[{id, name, cards:[{img, known}]}]
   jump: { days: { "2026-09-08": 10, "2026-09-09": 30 } },   // "2026-09-10": 180 —— 每日跳绳：日期→个数(0=只记完成)
   classes: [
@@ -273,7 +273,8 @@ var defaultData = {
     { date: "2026-09-09", classId: "c_read", status: "attend", note: "" },
     { date: "2026-09-10", classId: "c_wushu", status: "attend", note: "体能、侧手翻、跳绳。开始有点抵触，老师开导后好转" },
     { date: "2026-09-11", classId: "c_eng",  status: "attend", note: "" },
-    { date: "2026-09-14", classId: "c_read", status: "attend", note: "" }
+    { date: "2026-09-14", classId: "c_read", status: "attend", note: "" },
+    { date: "2026-09-22", classId: "c_eng", status: "attend", note: "" }
   ]
 };
 
@@ -329,7 +330,12 @@ function load() {
       var hasRead914 = (d.records || []).some(function (r) { return r.classId === "c_read" && r.date === "2026-09-14"; });
       if (!hasRead914) d.records.push({ date: "2026-09-14", classId: "c_read", status: "attend", note: "" });
     }
-    d.v = 8;
+    if ((d.v || 1) < 9) {
+      // v8 → v9：补录 2026-09-22(周二)英语已上（已有则跳过）
+      var hasEng922 = (d.records || []).some(function (r) { return r.classId === "c_eng" && r.date === "2026-09-22"; });
+      if (!hasEng922) d.records.push({ date: "2026-09-22", classId: "c_eng", status: "attend", note: "" });
+    }
+    d.v = 9;
     return d;
   } catch (e) { return JSON.parse(JSON.stringify(defaultData)); }
 }
@@ -339,7 +345,7 @@ var DB = load();
 (function persistIfMigrated() {
   var raw = localStorage.getItem(KEY);
   var stale = !raw;
-  if (raw) { try { stale = (JSON.parse(raw).v || 1) < 8; } catch (e) {} }
+  if (raw) { try { stale = (JSON.parse(raw).v || 1) < 9; } catch (e) {} }
   if (stale) save();
 })();
 
