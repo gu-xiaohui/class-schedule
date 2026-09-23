@@ -11,10 +11,11 @@
     --ink: #2B2A26; --muted: #8A867C; --ink-faint: #B4B0A6;
     --line: #EAE6DD;
     --pine: #2F4A3E; --pine-soft: #E7EFEA;
+    --fresh: #37976D;
     --clay: #C0563B; --clay-soft: #F9EDE7;
-    --green: #2F4A3E; --red: #B0432C;
+    --green: #37976D; --red: #B0432C;
     --serif: "Songti SC", "STSong", "Noto Serif SC", "Source Han Serif SC", serif;
-    --bg: var(--paper); --accent: var(--pine);
+    --bg: var(--paper); --accent: var(--fresh);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
   html { scroll-behavior: smooth; }
@@ -51,8 +52,8 @@
     cursor: pointer; min-height: 46px; color: #fff; transition: .15s;
   }
   .btn:active { transform: scale(.97); }
-  .btn.attend { background: var(--pine); }
-  .btn.miss { background: transparent; color: var(--muted); border: 1.5px solid var(--line); }
+  .btn.attend { background: var(--fresh); }
+  .btn.miss { background: transparent; color: #7D9B8A; border: 1.5px solid #D6E1DA; }
   .btn.small { padding: 8px 12px; font-size: 13px; min-height: 38px; font-weight: 500; }
   .done-note { font-size: 13px; color: var(--green); }
   .empty { color: var(--muted); font-size: 14px; padding: 6px 2px; }
@@ -98,14 +99,14 @@
   .weekday-picks { display: flex; gap: 4px; flex-wrap: wrap; }
   .weekday-picks label { border: 1.5px solid var(--line); border-radius: 9px; padding: 8px 10px; font-size: 13px; cursor: pointer; user-select: none; }
   .weekday-picks input { display: none; }
-  .weekday-picks label:has(input:checked) { background: var(--pine); color: #fff; border-color: var(--pine); }
+  .weekday-picks label:has(input:checked) { background: var(--fresh); color: #fff; border-color: var(--fresh); }
 
   .history-item { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 9px 4px; border-bottom: 1px solid var(--line); font-size: 14px; }
   .history-item .sub { color: var(--muted); font-size: 12px; }
   .note-text { color: var(--ink); font-size: 14px; margin-top: 2px; }
   .filter-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
   .filter-chips button { border: 1.5px solid var(--line); background: #fff; color: var(--ink); border-radius: 999px; padding: 7px 14px; font-size: 13px; cursor: pointer; }
-  .filter-chips button.on { background: var(--pine); color: #fff; border-color: var(--pine); }
+  .filter-chips button.on { background: var(--fresh); color: #fff; border-color: var(--fresh); }
   .entry-note { background: var(--pine-soft); border-left: 3px solid var(--pine); border-radius: 0 10px 10px 0; padding: 8px 10px; margin-top: 4px; font-size: 14px; }
   #addEntryForm { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; align-items: flex-end; }
   #addEntryForm textarea { flex: 1 1 100%; height: 70px; border: 1px solid var(--line); border-radius: 10px; padding: 10px; font-size: 15px; font-family: inherit; background: #fff; }
@@ -115,7 +116,7 @@
   .jm { flex: 1; text-align: center; padding: 7px 0 6px; border-radius: 12px; background: #F3F1EA; color: var(--muted); font-size: 13px; border: 1px solid var(--line); }
   .jm .jm-ic { display: block; font-size: 20px; line-height: 1.15; font-style: normal; filter: grayscale(1) opacity(.5); }
   .jm b { display: block; font-size: 11px; font-weight: 500; margin-top: 1px; }
-  .jm.on { background: var(--pine); color: #fff; border-color: var(--pine); }
+  .jm.on { background: var(--fresh); color: #fff; border-color: var(--fresh); }
   .jm.on .jm-ic { filter: none; }
   .jm.on b { font-weight: 600; }
 
@@ -158,7 +159,7 @@
   .cg-grid { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
   .cg-grid .cell { position: relative; width: 68px; height: 68px; border-radius: 8px; overflow: hidden; border: 1px solid var(--line); cursor: pointer; }
   .cg-grid .cell img { width: 100%; height: 100%; object-fit: cover; }
-  .cg-grid .cell .tick { position: absolute; right: 3px; bottom: 3px; background: rgba(47,74,62,.92); color: #fff; font-size: 11px; border-radius: 6px; padding: 0 5px; }
+  .cg-grid .cell .tick { position: absolute; right: 3px; bottom: 3px; background: rgba(55,151,109,.92); color: #fff; font-size: 11px; border-radius: 6px; padding: 0 5px; }
   .cg-grid .cell .del { position: absolute; left: 3px; top: 3px; background: rgba(0,0,0,.45); color: #fff; font-size: 11px; border-radius: 6px; padding: 0 5px; }
   .cg-grid .cell.add { display: flex; align-items: center; justify-content: center; border: 1.5px dashed #D8D3C6; background: none; color: var(--muted); font-size: 24px; cursor: pointer; }
   .review-ov { position: fixed; inset: 0; z-index: 90; background: #26251F; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 20px; }
@@ -281,7 +282,7 @@
 "use strict";
 var KEY = "interestClassTracker.v1";
 var DAY_NAMES = ["", "周一", "周二", "周三", "周四", "周五", "周六", "周日"];
-var COLORS = ["#C0563B", "#3E5C76", "#2F4A3E", "#8C6A4F", "#A98147", "#5C6B7A", "#8A867C"];
+var COLORS = ["#C0563B", "#3E5C76", "#37976D", "#8C6A4F", "#A98147", "#5C6B7A", "#8A867C"];
 
 var defaultData = {
   v: 9,
