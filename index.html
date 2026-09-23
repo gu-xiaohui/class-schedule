@@ -160,20 +160,25 @@
   .rc-month-btn:active { background: var(--pine-soft); }
   .rc-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
   .rc-wd { text-align: center; font-size: 11px; color: var(--muted); padding: 3px 0 6px; letter-spacing: .05em; }
-  .rc-day { min-height: 50px; border-radius: 10px; padding: 4px 2px 3px; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .rc-day { min-height: 60px; border-radius: 10px; padding: 4px 2px 3px; display: flex; flex-direction: column; align-items: center; gap: 3px; }
   .rc-day.act { cursor: pointer; }
   .rc-day.act:active { background: var(--pine-soft); }
-  .rc-num { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; color: var(--ink); }
+  .rc-num { width: 25px; height: 25px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; color: var(--ink); flex: none; }
   .rc-day.dim .rc-num { color: var(--ink-faint); }
   .rc-day.today .rc-num { background: var(--pine); color: #fff; font-weight: 600; }
+  .rc-day.did .rc-num { background: var(--dc); color: #fff; font-weight: 600; }
+  .rc-day.today.did .rc-num { box-shadow: 0 0 0 2px var(--pine); }
+  .rc-day.miss .rc-num { border: 1.5px solid var(--muted); color: var(--muted); }
   .rc-day.gap .rc-num { border: 1.5px dashed var(--clay); color: var(--clay); }
   .rc-day.today.gap .rc-num { background: var(--clay); border: none; }
-  .rc-dots { display: flex; gap: 3px; min-height: 8px; align-items: center; justify-content: center; flex-wrap: wrap; max-width: 100%; }
-  .rc-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; flex: none; }
-  .rc-dot.miss { background: none; border: 1.5px solid var(--muted); width: 6px; height: 6px; }
+  .rc-label { font-size: 9.5px; line-height: 1.25; color: var(--dc, var(--muted)); text-align: center; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+  .rc-day.miss .rc-label { color: var(--muted); }
+  .rc-day.gap .rc-label { color: var(--clay); }
   .rc-legend { display: flex; gap: 12px; row-gap: 4px; flex-wrap: wrap; font-size: 11.5px; color: var(--muted); padding: 8px 6px 4px; align-items: center; border-top: 1px solid var(--line); margin-top: 8px; }
   .rc-lg { display: inline-flex; align-items: center; gap: 5px; }
   .rc-legend .ring { width: 10px; height: 10px; border: 1.5px dashed var(--clay); border-radius: 50%; display: inline-block; flex: none; }
+  .rc-legend .solid { width: 10px; height: 10px; border-radius: 50%; background: var(--fresh); display: inline-block; flex: none; }
+  .rc-legend .hollow { width: 10px; height: 10px; border: 1.5px solid var(--muted); border-radius: 50%; display: inline-block; flex: none; }
 
   /* 识字卡片 */
   .card-group { background: #FBFAF7; border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; margin-top: 10px; }
@@ -1225,22 +1230,29 @@ function renderRecordCal() {
     var iso = isoOf(y, m, d);
     var wd = new Date(y, m - 1, d).getDay() || 7;
     var recs = byDate[iso] || [];
-    var dots = recs.map(function (r) {
-      var c = DB.classes.find(function (x) { return x.id === r.classId; });
-      if (r.status === "miss") return '<span class="rc-dot miss"></span>';
-      return '<span class="rc-dot" style="background:' + (c ? clsColor(c) : "#8A867C") + '"></span>';
-    }).join("");
+    var attClasses = recs.filter(function (r) { return r.status === "attend"; }).map(function (r) {
+      return DB.classes.find(function (x) { return x.id === r.classId; });
+    }).filter(Boolean);
+    var hasMiss = recs.some(function (r) { return r.status === "miss"; });
+    var first = attClasses[0];
+    var label = "", dcStyle = "";
+    if (attClasses.length) {
+      label = attClasses.map(function (c) { return c.name; }).join(" ");
+      dcStyle = ' style="--dc:' + clsColor(first) + '"';
+    } else if (hasMiss) {
+      label = "缺勤";
+    } else if (recs.some(function (r) { return r.status === "settle"; })) {
+      label = "结算";
+    }
     var gap = !recs.length && wdClasses[wd] && iso >= earliest && iso <= tISO;
+    if (gap) label = "没记";
     var future = iso > tISO;
-    html += '<div class="rc-day' + ((recs.length || gap) ? " act" : "") + (iso === tISO ? " today" : "") + (future ? " dim" : "") + (gap ? " gap" : "") + '"' +
+    html += '<div class="rc-day' + (recs.length ? (attClasses.length ? " did" : " miss") : (gap ? " gap" : "")) + ((recs.length || gap) ? " act" : "") + (iso === tISO ? " today" : "") + (future ? " dim" : "") + '"' + dcStyle +
       ((recs.length || gap) ? ' onclick="showDaySheet(\'' + iso + '\')"' : "") +
       (gap ? ' title="按课表这天有课，还没记"' : "") +
-      '><div class="rc-num">' + d + "</div>" + (dots ? '<div class="rc-dots">' + dots + "</div>" : "") + "</div>";
+      '><div class="rc-num">' + d + "</div>" + (label ? '<div class="rc-label">' + escapeHtml(label) + "</div>" : "") + "</div>";
   }
-  var legend = DB.classes.filter(function (c) { return (c.weekdays || []).length; }).map(function (c) {
-    return '<span class="rc-lg"><span class="rc-dot" style="background:' + clsColor(c) + '"></span>' + c.name + "</span>";
-  }).join("");
-  legend += '<span class="rc-lg"><span class="ring"></span>有课没记</span><span class="rc-lg"><span class="rc-dot miss"></span>缺勤</span>';
+  var legend = '<span class="rc-lg"><span class="solid"></span>已上（标课名）</span><span class="rc-lg"><span class="ring"></span>有课没记</span><span class="rc-lg"><span class="hollow"></span>缺勤</span>';
   html += "</div>" + '<div class="rc-legend">' + legend + "</div></div>";
   box.innerHTML = html;
 }
