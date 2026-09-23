@@ -152,6 +152,29 @@
   .photo-view { position: fixed; inset: 0; z-index: 99; background: rgba(0,0,0,.92); display: flex; align-items: center; justify-content: center; cursor: zoom-out; }
   .photo-view img { max-width: 96vw; max-height: 92vh; border-radius: 6px; }
 
+  /* 学习记录月历 */
+  .rc-card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 12px 10px 8px; }
+  .rc-head { display: flex; align-items: center; justify-content: space-between; padding: 0 4px 8px; }
+  .rc-title { font-family: var(--serif); font-size: 18px; font-weight: 700; letter-spacing: .06em; }
+  .rc-month-btn { width: 34px; height: 34px; border: 1px solid var(--line); background: var(--card); border-radius: 10px; font-size: 16px; color: var(--ink); cursor: pointer; line-height: 1; }
+  .rc-month-btn:active { background: var(--pine-soft); }
+  .rc-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+  .rc-wd { text-align: center; font-size: 11px; color: var(--muted); padding: 3px 0 6px; letter-spacing: .05em; }
+  .rc-day { min-height: 50px; border-radius: 10px; padding: 4px 2px 3px; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .rc-day.act { cursor: pointer; }
+  .rc-day.act:active { background: var(--pine-soft); }
+  .rc-num { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; color: var(--ink); }
+  .rc-day.dim .rc-num { color: var(--ink-faint); }
+  .rc-day.today .rc-num { background: var(--pine); color: #fff; font-weight: 600; }
+  .rc-day.gap .rc-num { border: 1.5px dashed var(--clay); color: var(--clay); }
+  .rc-day.today.gap .rc-num { background: var(--clay); border: none; }
+  .rc-dots { display: flex; gap: 3px; min-height: 8px; align-items: center; justify-content: center; flex-wrap: wrap; max-width: 100%; }
+  .rc-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; flex: none; }
+  .rc-dot.miss { background: none; border: 1.5px solid var(--muted); width: 6px; height: 6px; }
+  .rc-legend { display: flex; gap: 12px; row-gap: 4px; flex-wrap: wrap; font-size: 11.5px; color: var(--muted); padding: 8px 6px 4px; align-items: center; border-top: 1px solid var(--line); margin-top: 8px; }
+  .rc-lg { display: inline-flex; align-items: center; gap: 5px; }
+  .rc-legend .ring { width: 10px; height: 10px; border: 1.5px dashed var(--clay); border-radius: 50%; display: inline-block; flex: none; }
+
   /* 识字卡片 */
   .card-group { background: #FBFAF7; border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; margin-top: 10px; }
   .card-group .cg-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
@@ -244,6 +267,7 @@
 <div class="sec sec-review">
   <details>
     <summary><span class="s-title">📖 学习记录 · 复习本</span><small>RECORDS</small></summary>
+    <div id="recordCal" style="margin-top:12px;"></div>
     <div class="filter-chips" id="filterChips"></div>
     <form id="addEntryForm">
       <div class="field"><label>日期</label><input type="date" id="fDate"></div>
@@ -1139,6 +1163,95 @@ function renderHistory() {
     if (x.r.photos && x.r.photos.length) fillThumbs(x.idx, x.r.photos);
   });
 }
+/* ── 学习记录月历：一眼看出哪天上了、哪天漏记 ── */
+var rcYM = null;
+function isoOf(y, m, d) { return y + "-" + String(m).padStart(2, "0") + "-" + String(d).padStart(2, "0"); }
+window.rcShift = function (n) {
+  var t = new Date();
+  if (!rcYM) rcYM = { y: t.getFullYear(), m: t.getMonth() + 1 };
+  rcYM.m += n;
+  if (rcYM.m > 12) { rcYM.m = 1; rcYM.y += 1; }
+  if (rcYM.m < 1) { rcYM.m = 12; rcYM.y -= 1; }
+  renderRecordCal();
+};
+function renderRecordCal() {
+  var box = document.getElementById("recordCal");
+  if (!box) return;
+  var t = new Date();
+  if (!rcYM) rcYM = { y: t.getFullYear(), m: t.getMonth() + 1 };
+  var y = rcYM.y, m = rcYM.m, tISO = todayISO();
+  var byDate = {};
+  DB.records.forEach(function (r) { (byDate[r.date] = byDate[r.date] || []).push(r); });
+  var wdClasses = {};
+  DB.classes.forEach(function (c) { (c.weekdays || []).forEach(function (w) { (wdClasses[w] = wdClasses[w] || []).push(c); }); });
+  var earliest = DB.records.length ? DB.records.map(function (r) { return r.date; }).sort()[0] : tISO;
+  var firstWd = new Date(y, m - 1, 1).getDay() || 7;
+  var dim = new Date(y, m, 0).getDate();
+  var html = '<div class="rc-card">' +
+    '<div class="rc-head"><button class="rc-month-btn" onclick="rcShift(-1)">‹</button>' +
+    '<div class="rc-title">' + y + "年" + m + "月</div>" +
+    '<button class="rc-month-btn" onclick="rcShift(1)">›</button></div>' +
+    '<div class="rc-grid">' + ["一", "二", "三", "四", "五", "六", "日"].map(function (w) { return '<div class="rc-wd">' + w + "</div>"; }).join("");
+  for (var p = 1; p < firstWd; p++) html += '<div class="rc-day"></div>';
+  for (var d = 1; d <= dim; d++) {
+    var iso = isoOf(y, m, d);
+    var wd = new Date(y, m - 1, d).getDay() || 7;
+    var recs = byDate[iso] || [];
+    var dots = recs.map(function (r) {
+      var c = DB.classes.find(function (x) { return x.id === r.classId; });
+      if (r.status === "miss") return '<span class="rc-dot miss"></span>';
+      return '<span class="rc-dot" style="background:' + (c ? clsColor(c) : "#8A867C") + '"></span>';
+    }).join("");
+    var gap = !recs.length && wdClasses[wd] && iso >= earliest && iso <= tISO;
+    var future = iso > tISO;
+    html += '<div class="rc-day' + ((recs.length || gap) ? " act" : "") + (iso === tISO ? " today" : "") + (future ? " dim" : "") + (gap ? " gap" : "") + '"' +
+      ((recs.length || gap) ? ' onclick="showDaySheet(\'' + iso + '\')"' : "") +
+      (gap ? ' title="按课表这天有课，还没记"' : "") +
+      '><div class="rc-num">' + d + "</div>" + (dots ? '<div class="rc-dots">' + dots + "</div>" : "") + "</div>";
+  }
+  var legend = DB.classes.filter(function (c) { return (c.weekdays || []).length; }).map(function (c) {
+    return '<span class="rc-lg"><span class="rc-dot" style="background:' + clsColor(c) + '"></span>' + c.name + "</span>";
+  }).join("");
+  legend += '<span class="rc-lg"><span class="ring"></span>有课没记</span><span class="rc-lg"><span class="rc-dot miss"></span>缺勤</span>';
+  html += "</div>" + '<div class="rc-legend">' + legend + "</div></div>";
+  box.innerHTML = html;
+}
+window.showDaySheet = function (iso) {
+  var old = document.querySelector(".day-sheet");
+  if (old) old.remove();
+  var recs = DB.records.map(function (r, i) { return { r: r, idx: i }; }).filter(function (x) { return x.r.date === iso; });
+  var wd = new Date(iso.replace(/-/g, "/")).getDay() || 7;
+  var hasClass = DB.classes.some(function (c) { return (c.weekdays || []).indexOf(wd) >= 0; });
+  var ov = document.createElement("div");
+  ov.className = "class-modal day-sheet";
+  var body = "";
+  if (recs.length) {
+    recs.forEach(function (x) {
+      var r = x.r;
+      var c = DB.classes.find(function (cc) { return cc.id === r.classId; });
+      var tag = r.status === "attend" ? '<span class="tag-attend">已学</span>' : (r.status === "settle" ? "💰 已结算" : '<span class="tag-miss">缺勤</span>');
+      body += '<div class="history-item" style="flex-wrap:wrap;"><div style="flex:1 1 auto;">' + (c ? c.emoji + " " + c.name : "（已删课程）") + "　" + tag +
+        (r.note ? '<div class="entry-note">' + escapeHtml(r.note) + "</div>" : "") + '</div><div class="thumbs" id="dthumbs_' + x.idx + '"></div></div>';
+    });
+  } else {
+    body += '<div class="empty">' + (hasClass ? "按课表这天有课，但还没记" : "这天没有记录") + "</div>";
+  }
+  ov.innerHTML = '<div class="class-sheet"><h3>' + fmtDateCN(iso) + '<button class="close-x">✕</button></h3>' + body +
+    '<div style="display:flex;gap:8px;margin-top:14px;"><button class="btn small attend" id="dsAdd">＋ 补记这一天</button><button class="btn small miss" id="dsClose">关闭</button></div></div>';
+  document.body.appendChild(ov);
+  function close() { ov.remove(); }
+  ov.querySelector(".close-x").addEventListener("click", close);
+  ov.querySelector("#dsClose").addEventListener("click", close);
+  ov.addEventListener("click", function (e) { if (e.target === ov) close(); });
+  ov.querySelector("#dsAdd").addEventListener("click", function () {
+    close();
+    var f = document.getElementById("fDate");
+    if (f) f.value = iso;
+    var n = document.getElementById("fNote");
+    if (n) { n.value = ""; n.focus(); }
+  });
+  recs.forEach(function (x) { if (x.r.photos && x.r.photos.length) fillThumbsTo("dthumbs_" + x.idx, x.r.photos); });
+};
 window.editNote = function (i) {
   var r = DB.records[i];
   if (!r) return;
@@ -1181,7 +1294,7 @@ document.getElementById("addEntryForm").addEventListener("submit", function (e) 
   })();
 });
 
-function renderAll() { renderToday(); renderWeek(); renderJump(); renderCards(); renderStats(); renderHistory(); }
+function renderAll() { renderToday(); renderWeek(); renderJump(); renderCards(); renderStats(); renderHistory(); renderRecordCal(); }
 
 /* ── 管理操作 ── */
 window.editRemain = function (i) {
