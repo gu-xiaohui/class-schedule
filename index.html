@@ -7,51 +7,37 @@
 <title>兴趣班课程表</title>
 <style>
   :root {
-    --paper: #faf7f2; --card: #ffffff;
-    --ink: #292524; --ink-soft: #57534e; --ink-faint: #a8a29e; --muted: #78716c;
-    --line: #e7e5e4;
-    --autumn: #c2410c; --autumn-soft: #fff7ed;
-    --gold: #d97706; --gold-deep: #b45309;
-    --lake: #0e7490; --lake-soft: #ecfeff;
-    --green: #15803d; --green-soft: #f0fdf4;
-    --red: #b91c1c; --red-soft: #fef2f2;
-    --bg: var(--paper); --accent: var(--autumn);
+    --paper: #F7F5F0; --card: #FFFFFF;
+    --ink: #2B2A26; --muted: #8A867C; --ink-faint: #B4B0A6;
+    --line: #EAE6DD;
+    --pine: #2F4A3E; --pine-soft: #E7EFEA;
+    --clay: #C0563B; --clay-soft: #F9EDE7;
+    --green: #2F4A3E; --red: #B0432C;
+    --serif: "Songti SC", "STSong", "Noto Serif SC", "Source Han Serif SC", serif;
+    --bg: var(--paper); --accent: var(--pine);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
   html { scroll-behavior: smooth; }
   body {
-    font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", -apple-system, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", sans-serif;
     background: var(--paper); color: var(--ink); line-height: 1.6;
-    max-width: 760px; margin: 0 auto; padding: 16px 14px 60px;
+    max-width: 760px; margin: 0 auto; padding: 0 14px 60px;
   }
 
-  /* ===== 顶部横幅 ===== */
-  header.hero {
-    margin: -16px -14px 6px; padding: 40px 20px 32px; text-align: center; color: #fff;
-    background:
-      radial-gradient(640px 220px at 50% -60px, rgba(251,191,36,.28), transparent 65%),
-      linear-gradient(150deg, #431407 0%, #7c2d12 42%, #c2410c 100%);
-    border-radius: 0 0 22px 22px;
-  }
-  header.hero h1 { font-size: clamp(22px, 5vw, 30px); letter-spacing: 6px; font-weight: 700; text-shadow: 0 2px 12px rgba(0,0,0,.35); }
-  header.hero .sub { margin-top: 8px; font-size: 14px; letter-spacing: 2px; opacity: .92; text-shadow: 0 1px 8px rgba(0,0,0,.35); }
+  /* ===== 封面（京苏浙攻略同款） ===== */
+  .cover { text-align: center; padding: 46px 0 10px; }
+  .cover .eyebrow { font-size: 12.5px; letter-spacing: .35em; color: var(--clay); margin-bottom: 14px; padding-left: .35em; }
+  .cover h1 { font-family: var(--serif); font-size: clamp(28px, 6vw, 36px); font-weight: 700; letter-spacing: .08em; line-height: 1.35; }
+  .cover .sub { margin-top: 12px; color: var(--muted); font-size: 14px; letter-spacing: .06em; }
+  .cover .rule { width: 36px; height: 2px; background: var(--clay); margin: 18px auto 0; opacity: .8; }
 
-  /* ===== 分区标题（徽章式） ===== */
-  .sec { margin-top: 20px; }
-  .sec > h2, details > summary { font-size: 16.5px; font-weight: 700; color: var(--ink); }
-  .sec > h2 { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
-  .num {
-    flex: none; width: 27px; height: 27px; border-radius: 8px;
-    display: inline-flex; align-items: center; justify-content: center;
-    font-size: 15px; background: var(--autumn); color: #fff;
-    box-shadow: 0 1px 4px rgba(194,65,12,.3);
-  }
-  .num.b-gold { background: var(--gold); box-shadow: 0 1px 4px rgba(217,119,6,.3); }
-  .num.b-lake { background: var(--lake); box-shadow: 0 1px 4px rgba(14,116,144,.3); }
-  .num.b-green { background: var(--green); box-shadow: 0 1px 4px rgba(21,128,61,.3); }
-  .num.b-stone { background: #57534e; box-shadow: 0 1px 4px rgba(87,83,78,.3); }
+  /* ===== 分区标题（宋体 + 侧标） ===== */
+  .sec { margin-top: 30px; }
+  .sec-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px; }
+  .sec-head h2 { font-family: var(--serif); font-size: 21px; font-weight: 700; letter-spacing: .05em; }
+  .sec-head small { font-size: 11px; color: var(--muted); letter-spacing: .18em; }
 
-  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px; box-shadow: 0 1px 3px rgba(68,64,60,.05); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 14px; }
 
   /* 今日打卡卡 */
   .today-card { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
@@ -61,44 +47,46 @@
   .cls-meta { font-size: 12px; color: var(--muted); }
   .remaining-pill { display: inline-block; font-size: 12px; padding: 1px 9px; border-radius: 999px; color: #fff; margin-left: 6px; vertical-align: 2px; }
   .btn {
-    border: none; border-radius: 10px; padding: 12px 18px; font-size: 15px; font-weight: 600;
+    border: none; border-radius: 12px; padding: 12px 18px; font-size: 15px; font-weight: 600;
     cursor: pointer; min-height: 46px; color: #fff; transition: .15s;
   }
   .btn:active { transform: scale(.97); }
-  .btn.attend { background: var(--green); box-shadow: 0 2px 5px rgba(21,128,61,.25); }
-  .btn.miss { background: transparent; color: var(--muted); border: 1.5px solid #d6d3d1; }
+  .btn.attend { background: var(--pine); }
+  .btn.miss { background: transparent; color: var(--muted); border: 1.5px solid var(--line); }
   .btn.small { padding: 8px 12px; font-size: 13px; min-height: 38px; font-weight: 500; }
   .done-note { font-size: 13px; color: var(--green); }
   .empty { color: var(--muted); font-size: 14px; padding: 6px 2px; }
 
   /* 周视图 */
-  .day-row { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 12px; margin-bottom: 6px; background: var(--card); border: 1px solid var(--line); box-shadow: 0 1px 3px rgba(68,64,60,.04); }
-  .day-row.today { border-color: #fdba74; background: var(--autumn-soft); }
+  .day-row { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 14px; margin-bottom: 6px; background: var(--card); border: 1px solid var(--line); }
+  .day-row.today { border-color: #E3C4B5; background: var(--clay-soft); }
   .day-label { width: 46px; flex: none; font-weight: 700; font-size: 14px; }
-  .day-row.today .day-label { color: var(--autumn); }
+  .day-row.today .day-label { color: var(--clay); }
   .day-date { display: block; font-size: 10px; font-weight: 400; color: var(--muted); margin-top: 1px; }
   .chips { display: flex; flex-wrap: wrap; gap: 8px; }
-  .chip { display: inline-flex; align-items: center; gap: 5px; font-size: 14px; padding: 6px 12px; border-radius: 999px; color: #fff; cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,.14); }
+  .chip { display: inline-flex; align-items: center; gap: 5px; font-size: 14px; padding: 6px 12px; border-radius: 999px; color: #fff; cursor: pointer; }
   .chip .t { font-size: 11px; opacity: .9; font-weight: 400; }
 
   /* 课程记录弹层 */
-  .class-modal { position: fixed; inset: 0; z-index: 60; background: rgba(41,37,36,.45); display: flex; align-items: flex-end; justify-content: center; }
-  .class-sheet { background: #fff; border-radius: 18px 18px 0 0; width: 100%; max-width: 760px; max-height: 78vh; overflow-y: auto; padding: 14px 16px 30px; box-shadow: 0 -6px 24px rgba(0,0,0,.15); }
+  .class-modal { position: fixed; inset: 0; z-index: 60; background: rgba(43,42,38,.45); display: flex; align-items: flex-end; justify-content: center; }
+  .class-sheet { background: #fff; border-radius: 18px 18px 0 0; width: 100%; max-width: 760px; max-height: 78vh; overflow-y: auto; padding: 14px 16px 30px; }
   .class-sheet h3 { display: flex; justify-content: space-between; align-items: center; font-size: 17px; margin-bottom: 6px; }
   .class-sheet .close-x { background: none; border: none; font-size: 20px; color: var(--muted); cursor: pointer; padding: 4px 8px; }
 
   /* 统计与管理 */
   table { width: 100%; border-collapse: collapse; font-size: 14px; }
   th, td { text-align: left; padding: 9px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
-  th { color: var(--gold-deep); font-weight: 600; font-size: 12px; background: #fef3e2; letter-spacing: .5px; }
+  th { color: var(--pine); font-weight: 600; font-size: 12px; background: var(--pine-soft); letter-spacing: .5px; }
   td .ops { display: flex; gap: 6px; }
-  .link-btn { background: none; border: none; color: var(--lake); cursor: pointer; font-size: 13px; padding: 6px 8px; }
+  .link-btn { background: none; border: none; color: var(--clay); cursor: pointer; font-size: 13px; padding: 6px 8px; }
   .link-btn.danger { color: var(--red); }
 
-  details { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; box-shadow: 0 1px 3px rgba(68,64,60,.05); }
-  details > summary { cursor: pointer; display: flex; align-items: center; gap: 8px; list-style: none; }
+  details { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 12px 14px; }
+  details > summary { cursor: pointer; display: flex; align-items: baseline; gap: 10px; list-style: none; }
   details > summary::-webkit-details-marker { display: none; }
-  details > summary::after { content: "▾"; margin-left: auto; color: var(--ink-faint); font-size: 13px; transition: transform .2s; }
+  details > summary .s-title { font-family: var(--serif); font-size: 17px; font-weight: 700; letter-spacing: .04em; }
+  details > summary small { font-size: 11px; color: var(--muted); letter-spacing: .18em; font-weight: 400; }
+  details > summary::after { content: "▾"; margin-left: auto; color: var(--ink-faint); font-size: 13px; transition: transform .2s; align-self: center; }
   details[open] > summary::after { transform: rotate(180deg); }
   form.add-form { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; align-items: flex-end; }
   .field { display: flex; flex-direction: column; gap: 3px; }
@@ -106,41 +94,41 @@
   input[type=text], input[type=time], input[type=number], input[type=date], select {
     border: 1px solid var(--line); border-radius: 10px; padding: 10px; font-size: 15px; background: #fff; min-height: 44px;
   }
-  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px rgba(217,119,6,.14); }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--pine); box-shadow: 0 0 0 3px rgba(47,74,62,.12); }
   .weekday-picks { display: flex; gap: 4px; flex-wrap: wrap; }
   .weekday-picks label { border: 1.5px solid var(--line); border-radius: 9px; padding: 8px 10px; font-size: 13px; cursor: pointer; user-select: none; }
   .weekday-picks input { display: none; }
-  .weekday-picks label:has(input:checked) { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .weekday-picks label:has(input:checked) { background: var(--pine); color: #fff; border-color: var(--pine); }
 
   .history-item { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 9px 4px; border-bottom: 1px solid var(--line); font-size: 14px; }
   .history-item .sub { color: var(--muted); font-size: 12px; }
   .note-text { color: var(--ink); font-size: 14px; margin-top: 2px; }
   .filter-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
   .filter-chips button { border: 1.5px solid var(--line); background: #fff; color: var(--ink); border-radius: 999px; padding: 7px 14px; font-size: 13px; cursor: pointer; }
-  .filter-chips button.on { background: var(--autumn); color: #fff; border-color: var(--autumn); }
-  .entry-note { background: #faf9f6; border-left: 3px solid #fcd34d; border-radius: 0 10px 10px 0; padding: 8px 10px; margin-top: 4px; font-size: 14px; }
+  .filter-chips button.on { background: var(--pine); color: #fff; border-color: var(--pine); }
+  .entry-note { background: var(--pine-soft); border-left: 3px solid var(--pine); border-radius: 0 10px 10px 0; padding: 8px 10px; margin-top: 4px; font-size: 14px; }
   #addEntryForm { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; align-items: flex-end; }
   #addEntryForm textarea { flex: 1 1 100%; height: 70px; border: 1px solid var(--line); border-radius: 10px; padding: 10px; font-size: 15px; font-family: inherit; background: #fff; }
   .jump-stats { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 14px; color: var(--muted); margin: 6px 0 10px; }
   .jump-stats b { color: var(--ink); font-size: 16px; }
   .jump-week { display: flex; gap: 6px; }
-  .jm { flex: 1; text-align: center; padding: 7px 0 6px; border-radius: 10px; background: #f0efeb; color: var(--muted); font-size: 13px; }
-  .jm .jm-ic { display: block; font-size: 20px; line-height: 1.15; font-style: normal; filter: grayscale(1) opacity(.55); }
+  .jm { flex: 1; text-align: center; padding: 7px 0 6px; border-radius: 12px; background: #F3F1EA; color: var(--muted); font-size: 13px; border: 1px solid var(--line); }
+  .jm .jm-ic { display: block; font-size: 20px; line-height: 1.15; font-style: normal; filter: grayscale(1) opacity(.5); }
   .jm b { display: block; font-size: 11px; font-weight: 500; margin-top: 1px; }
-  .jm.on { background: linear-gradient(135deg, var(--autumn), var(--gold)); color: #fff; box-shadow: 0 2px 6px rgba(194,65,12,.3); }
+  .jm.on { background: var(--pine); color: #fff; border-color: var(--pine); }
   .jm.on .jm-ic { filter: none; }
   .jm.on b { font-weight: 600; }
 
   /* 打卡奖励弹层（灭火器） */
   .reward-overlay {
     position: fixed; inset: 0; z-index: 99;
-    background: rgba(250,247,242,.9); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
+    background: rgba(247,245,240,.94); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     animation: fadeOut .3s ease 1.9s forwards; cursor: pointer;
   }
   .reward-emoji { font-size: 96px; line-height: 1; animation: bounceIn .7s cubic-bezier(.34,1.56,.64,1); filter: drop-shadow(0 8px 18px rgba(0,0,0,.18)); }
   .reward-title { margin-top: 14px; font-size: 22px; font-weight: 700; color: var(--ink); animation: riseIn .5s ease .25s both; }
-  .reward-sub { margin-top: 6px; font-size: 15px; color: var(--gold-deep); font-weight: 600; animation: riseIn .5s ease .45s both; }
+  .reward-sub { margin-top: 6px; font-size: 15px; color: var(--clay); font-weight: 600; animation: riseIn .5s ease .45s both; }
   .reward-spark { position: absolute; font-size: 26px; animation: sparkle 1.2s ease infinite alternate; }
   @keyframes bounceIn { 0% { transform: scale(.2) rotate(-14deg); opacity: 0; } 60% { transform: scale(1.15) rotate(4deg); opacity: 1; } 100% { transform: scale(1) rotate(0); } }
   @keyframes riseIn { from { transform: translateY(14px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
@@ -151,7 +139,7 @@
 
   textarea { width: 100%; height: 90px; border: 1px solid var(--line); border-radius: 10px; padding: 10px; font-size: 12px; font-family: monospace; margin-top: 8px; }
   .hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
-  .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: 24px; background: #292524; color: #fff; padding: 10px 20px; border-radius: 999px; font-size: 14px; opacity: 0; transition: opacity .25s; pointer-events: none; z-index: 9; box-shadow: 0 4px 14px rgba(0,0,0,.2); }
+  .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: 24px; background: #2B2A26; color: #fff; padding: 10px 20px; border-radius: 999px; font-size: 14px; opacity: 0; transition: opacity .25s; pointer-events: none; z-index: 9; }
   .toast.show { opacity: .95; }
 
   /* 学习记录照片 */
@@ -164,17 +152,17 @@
   .photo-view img { max-width: 96vw; max-height: 92vh; border-radius: 6px; }
 
   /* 识字卡片 */
-  .card-group { background: #faf9f6; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin-top: 10px; }
+  .card-group { background: #FBFAF7; border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; margin-top: 10px; }
   .card-group .cg-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
   .card-group .cg-title { font-weight: 700; font-size: 15px; }
   .cg-grid { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
   .cg-grid .cell { position: relative; width: 68px; height: 68px; border-radius: 8px; overflow: hidden; border: 1px solid var(--line); cursor: pointer; }
   .cg-grid .cell img { width: 100%; height: 100%; object-fit: cover; }
-  .cg-grid .cell .tick { position: absolute; right: 3px; bottom: 3px; background: rgba(21,128,61,.92); color: #fff; font-size: 11px; border-radius: 6px; padding: 0 5px; }
+  .cg-grid .cell .tick { position: absolute; right: 3px; bottom: 3px; background: rgba(47,74,62,.92); color: #fff; font-size: 11px; border-radius: 6px; padding: 0 5px; }
   .cg-grid .cell .del { position: absolute; left: 3px; top: 3px; background: rgba(0,0,0,.45); color: #fff; font-size: 11px; border-radius: 6px; padding: 0 5px; }
-  .cg-grid .cell.add { display: flex; align-items: center; justify-content: center; border: 1.5px dashed #d6d3d1; background: none; color: var(--muted); font-size: 24px; cursor: pointer; }
-  .review-ov { position: fixed; inset: 0; z-index: 90; background: #1c1917; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 20px; }
-  .review-ov .rv-count { color: #d6d3d1; font-size: 14px; }
+  .cg-grid .cell.add { display: flex; align-items: center; justify-content: center; border: 1.5px dashed #D8D3C6; background: none; color: var(--muted); font-size: 24px; cursor: pointer; }
+  .review-ov { position: fixed; inset: 0; z-index: 90; background: #26251F; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 20px; }
+  .review-ov .rv-count { color: #CFCCC0; font-size: 14px; }
   .review-ov .rv-img-box { flex: 0 1 auto; display: flex; align-items: center; justify-content: center; width: 100%; }
   .review-ov img { max-width: 92vw; max-height: 62vh; border-radius: 12px; }
   .review-ov .rv-btns { display: flex; gap: 14px; width: 100%; max-width: 480px; }
@@ -186,29 +174,31 @@
 </style>
 </head>
 <body>
-<header class="hero">
+<header class="cover">
+  <div class="eyebrow">跳跳的成长记录</div>
   <h1>兴趣班课程表</h1>
   <p class="sub" id="todayStr"></p>
+  <div class="rule"></div>
 </header>
 
 <div class="sec sec-today">
-  <h2><span class="num">📍</span>今天的课</h2>
+  <div class="sec-head"><h2>📍 今天的课</h2><small>TODAY</small></div>
   <div id="todayArea"></div>
 </div>
 
 <div class="sec sec-week">
-  <h2><span class="num b-gold">🗓</span>每周安排</h2>
+  <div class="sec-head"><h2>🗓 每周安排</h2><small>WEEKLY</small></div>
   <div id="weekArea"></div>
 </div>
 
 <div class="sec sec-jump">
-  <h2><span class="num b-green">🏃</span>每日跳绳</h2>
+  <div class="sec-head"><h2>🏃 每日跳绳</h2><small>JUMP ROPE</small></div>
   <div id="jumpArea"></div>
 </div>
 
 <div class="sec sec-cards">
   <details id="cardsBox">
-    <summary><span class="num b-lake">🃏</span>识字卡片 · 归类复习</summary>
+    <summary><span class="s-title">🃏 识字卡片 · 归类复习</span><small>CARDS</small></summary>
     <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
       <button class="btn small" style="background:var(--accent);" onclick="addCardGroup()">＋ 新建分组</button>
       <button class="btn small attend" onclick="startReview('all')">▶ 开始复习（全部）</button>
@@ -222,7 +212,7 @@
 
 <div class="sec sec-stats">
   <details>
-    <summary><span class="num b-stone">📊</span>课程与课时统计 · 添加 / 编辑</summary>
+    <summary><span class="s-title">📊 课程与课时统计 · 添加 / 编辑</span><small>STATS</small></summary>
     <div style="overflow-x:auto; margin-top: 10px;">
       <table>
         <thead><tr><th>课程</th><th>时间</th><th>周几</th><th>已上</th><th>缺勤</th><th>剩余 / 待结</th><th>操作</th></tr></thead>
@@ -252,7 +242,7 @@
 
 <div class="sec sec-review">
   <details>
-    <summary><span class="num">📖</span>学习记录 · 复习本</summary>
+    <summary><span class="s-title">📖 学习记录 · 复习本</span><small>RECORDS</small></summary>
     <div class="filter-chips" id="filterChips"></div>
     <form id="addEntryForm">
       <div class="field"><label>日期</label><input type="date" id="fDate"></div>
@@ -269,7 +259,7 @@
 
 <div class="sec sec-backup">
   <details>
-    <summary><span class="num b-gold">💾</span>备份 / 恢复（换设备用）</summary>
+    <summary><span class="s-title">💾 备份 / 恢复（换设备用）</span><small>BACKUP</small></summary>
     <div style="margin-top: 10px;">
       <button class="btn small" style="background:var(--accent);" onclick="doExport()">导出数据到下方文本框</button>
       <textarea id="ioArea" placeholder="点「导出」生成数据；换设备时把内容粘贴到这里，再点「导入」"></textarea>
@@ -291,7 +281,7 @@
 "use strict";
 var KEY = "interestClassTracker.v1";
 var DAY_NAMES = ["", "周一", "周二", "周三", "周四", "周五", "周六", "周日"];
-var COLORS = ["#c2410c", "#0e7490", "#b45309", "#15803d", "#b91c1c", "#155e75", "#78716c"];
+var COLORS = ["#C0563B", "#3E5C76", "#2F4A3E", "#8C6A4F", "#A98147", "#5C6B7A", "#8A867C"];
 
 var defaultData = {
   v: 9,
@@ -963,9 +953,9 @@ window.viewCard = function (gi, ci) {
     '<div class="rv-count" id="cvCount"></div>' +
     '<div class="rv-img-box" id="cvImgBox"></div>' +
     '<div class="cv-nav">' +
-      '<button class="btn miss" style="border:1.5px solid #57534e;" id="cvPrev">‹ 上一张</button>' +
+      '<button class="btn miss" style="border:1.5px solid #6E6B5E;" id="cvPrev">‹ 上一张</button>' +
       '<button class="btn mid attend" id="cvKnown"></button>' +
-      '<button class="btn miss" style="border:1.5px solid #57534e;" id="cvNext">下一张 ›</button>' +
+      '<button class="btn miss" style="border:1.5px solid #6E6B5E;" id="cvNext">下一张 ›</button>' +
     "</div>";
   document.body.appendChild(ov);
   function refresh() {
@@ -1073,7 +1063,7 @@ function showReviewCard() {
   ov.innerHTML = '<button class="rv-close">✕</button>' +
     '<div class="rv-count">' + (rvIdx + 1) + " / " + rvQueue.length + '</div>' +
     '<div class="rv-img-box"></div>' +
-    '<div class="rv-btns"><button class="btn miss" style="border:1.5px solid #57534e;">✗ 还不会</button><button class="btn attend">✓ 会了</button></div>';
+    '<div class="rv-btns"><button class="btn miss" style="border:1.5px solid #6E6B5E;">✗ 还不会</button><button class="btn attend">✓ 会了</button></div>';
   ov.querySelector(".rv-close").addEventListener("click", function () { ov.remove(); renderCards(); });
   ov.querySelector(".rv-btns .miss").addEventListener("click", function () { nextReview(false); });
   ov.querySelector(".rv-btns .attend").addEventListener("click", function () { nextReview(true); });
