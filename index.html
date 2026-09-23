@@ -309,7 +309,7 @@ var DAY_NAMES = ["", "周一", "周二", "周三", "周四", "周五", "周六",
 var COLORS = ["#C0563B", "#3E5C76", "#37976D", "#8C6A4F", "#A98147", "#5C6B7A", "#8A867C"];
 
 var defaultData = {
-  v: 9,
+  v: 10,
   cards: { groups: [] },   // 识字卡片：[{id, name, cards:[{img, known}]}]
   jump: { days: { "2026-09-08": 10, "2026-09-09": 30 } },   // "2026-09-10": 180 —— 每日跳绳：日期→个数(0=只记完成)
   classes: [
@@ -319,13 +319,22 @@ var defaultData = {
     { id: "c_home",  emoji: "🏠", name: "家里学习", time: "", weekdays: [], remaining: null, billing: "none" }
   ],
   records: [
-    { date: "2026-09-07", classId: "c_read", status: "miss",   note: "" },
-    { date: "2026-09-08", classId: "c_eng",  status: "attend", note: "" },
+    { date: "2026-09-01", classId: "c_eng", status: "attend", note: "" },
+    { date: "2026-09-02", classId: "c_read", status: "miss", note: "" },
+    { date: "2026-09-04", classId: "c_eng", status: "attend", note: "" },
+    { date: "2026-09-07", classId: "c_read", status: "attend", note: "" },
+    { date: "2026-09-08", classId: "c_eng", status: "attend", note: "" },
     { date: "2026-09-09", classId: "c_read", status: "attend", note: "" },
     { date: "2026-09-10", classId: "c_wushu", status: "attend", note: "体能、侧手翻、跳绳。开始有点抵触，老师开导后好转" },
-    { date: "2026-09-11", classId: "c_eng",  status: "attend", note: "" },
+    { date: "2026-09-11", classId: "c_eng", status: "attend", note: "" },
     { date: "2026-09-14", classId: "c_read", status: "attend", note: "" },
-    { date: "2026-09-22", classId: "c_eng", status: "attend", note: "" }
+    { date: "2026-09-15", classId: "c_eng", status: "attend", note: "" },
+    { date: "2026-09-16", classId: "c_read", status: "attend", note: "" },
+    { date: "2026-09-17", classId: "c_wushu", status: "attend", note: "" },
+    { date: "2026-09-18", classId: "c_eng", status: "attend", note: "" },
+    { date: "2026-09-21", classId: "c_read", status: "attend", note: "" },
+    { date: "2026-09-22", classId: "c_eng", status: "attend", note: "" },
+    { date: "2026-09-23", classId: "c_read", status: "attend", note: "" }
   ]
 };
 
@@ -386,7 +395,26 @@ function load() {
       var hasEng922 = (d.records || []).some(function (r) { return r.classId === "c_eng" && r.date === "2026-09-22"; });
       if (!hasEng922) d.records.push({ date: "2026-09-22", classId: "c_eng", status: "attend", note: "" });
     }
-    d.v = 9;
+    if ((d.v || 1) < 10) {
+      // v9 → v10：2026-09 补正——阅读除9/2首课外全上（9/7误记缺勤改为已上），英语全上，9/17武术补记
+      var has10 = function (cid, dt) { return (d.records || []).some(function (r) { return r.classId === cid && r.date === dt; }); };
+      var r97 = (d.records || []).find(function (r) { return r.classId === "c_read" && r.date === "2026-09-07"; });
+      if (r97 && r97.status === "miss") r97.status = "attend";
+      if (!has10("c_read", "2026-09-07")) d.records.push({ date: "2026-09-07", classId: "c_read", status: "attend", note: "" });
+      if (!has10("c_read", "2026-09-02")) d.records.push({ date: "2026-09-02", classId: "c_read", status: "miss", note: "" });
+      ["2026-09-16", "2026-09-21", "2026-09-23"].forEach(function (dt) {
+        if (!has10("c_read", dt)) d.records.push({ date: dt, classId: "c_read", status: "attend", note: "" });
+      });
+      ["2026-09-01", "2026-09-04", "2026-09-15", "2026-09-18"].forEach(function (dt) {
+        if (!has10("c_eng", dt)) d.records.push({ date: dt, classId: "c_eng", status: "attend", note: "" });
+      });
+      if (!has10("c_wushu", "2026-09-17")) {
+        d.records.push({ date: "2026-09-17", classId: "c_wushu", status: "attend", note: "" });
+        var ws10 = d.classes && d.classes.filter(function (c) { return c.id === "c_wushu"; })[0];
+        if (ws10 && ws10.billing === "prepaid" && typeof ws10.remaining === "number" && ws10.remaining > 0) ws10.remaining -= 1;
+      }
+    }
+    d.v = 10;
     return d;
   } catch (e) { return JSON.parse(JSON.stringify(defaultData)); }
 }
@@ -396,7 +424,7 @@ var DB = load();
 (function persistIfMigrated() {
   var raw = localStorage.getItem(KEY);
   var stale = !raw;
-  if (raw) { try { stale = (JSON.parse(raw).v || 1) < 9; } catch (e) {} }
+  if (raw) { try { stale = (JSON.parse(raw).v || 1) < 10; } catch (e) {} }
   if (stale) save();
 })();
 
