@@ -114,28 +114,27 @@
 
 <script>
 var KEY = "tiaotiao.habits.v1";
-var WEEK_GOAL = 55;
 var DAY_NAMES = ["", "周一", "周二", "周三", "周四", "周五", "周六", "周日"];
 
-/* 任务定义：wd 为适用星期（1-7）；ic 图标；t 标题；s 副标题（可按星期动态） */
+/* 任务定义：ic 图标；t 标题；s 副标题（可按星期动态） */
 var HABITS = [
   { id: "dress",  sec: "morning", ic: "👕", t: "自己起床穿衣服", s: "闹钟一响就起来，不赖床" },
   { id: "teeth",  sec: "morning", ic: "🪥", t: "刷牙洗脸", s: "自己完成，不用催" },
-  { id: "breakfast", sec: "morning", ic: "🍳", t: "好好吃早餐", s: "坐好吃完再玩" },
-  { id: "bag",    sec: "morning", ic: "🎒", t: "自己背书包出门", s: "书包、水壶自己拿" },
   { id: "wash",   sec: "afternoon", ic: "🧼", t: "回家先洗手", s: "放学进门第一件事" },
   { id: "study",  sec: "afternoon", ic: "📚", t: "学习时间", s: "", dyn: true },
   { id: "jump",   sec: "afternoon", ic: "🏃", t: "跳绳打卡", s: "和课程表里的跳绳是同一件事" },
   { id: "chores", sec: "afternoon", ic: "🧹", t: "帮做一件家务", s: "收玩具 / 摆碗筷 / 扔垃圾" },
   { id: "wushu",  sec: "afternoon", ic: "🥋", t: "武术 10 分钟", s: "", dyn: true },
-  { id: "shower", sec: "night", ic: "🛁", t: "自己洗漱", s: "刷牙、洗脸、洗脚自己来" },
-  { id: "sleep",  sec: "night", ic: "🌙", t: "睡前故事 · 9点前睡觉", s: "听完故事关灯，不磨蹭" }
+  { id: "bath",   sec: "night", ic: "🛁", t: "洗澡（计时10分钟）", s: "沙漏漏完就出来，刷牙一起完成" },
+  { id: "story",  sec: "night", ic: "📖", t: "睡前故事 1 本", s: "讲完就躺下，不讨价还价" },
+  { id: "lights", sec: "night", ic: "🌙", t: "按目标时间关灯", s: "本周目标 22:30，做到了下周提前半小时" }
 ];
 var SEC_META = {
   morning: { name: "早上 · 上学前", en: "MORNING" },
   afternoon: { name: "放学后", en: "AFTER SCHOOL" },
   night: { name: "晚上", en: "NIGHT" }
 };
+var WEEK_GOAL = 50;
 
 function todayISO() { var d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
 function todayWd() { var w = new Date().getDay(); return w === 0 ? 7 : w; }
@@ -164,7 +163,7 @@ function weekOf(dStr) {
 function habitAvail(h, wd) {
   if (wd >= 1 && wd <= 5) return true;             // 工作日全项
   if (h.id === "wash" || h.id === "study") return false;  // 周末没有放学洗手/课业复习
-  return ["dress", "teeth", "breakfast", "jump", "chores", "shower", "sleep"].indexOf(h.id) >= 0;
+  return true;                                     // 其余周末都保留
 }
 function habitSub(h, wd) {
   if (h.id === "study") {
