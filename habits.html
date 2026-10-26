@@ -120,6 +120,7 @@ var DAY_NAMES = ["", "周一", "周二", "周三", "周四", "周五", "周六",
 var HABITS = [
   { id: "dress",  sec: "morning", ic: "👕", t: "自己起床穿衣服", s: "闹钟一响就起来，不赖床" },
   { id: "teeth",  sec: "morning", ic: "🪥", t: "刷牙洗脸", s: "自己完成，不用催" },
+  { id: "bye",    sec: "morning", ic: "👋", t: "跟妈妈拜拜快速入园", s: "幼儿园门口说 bye bye，不磨蹭不回头" },
   { id: "wash",   sec: "afternoon", ic: "🧼", t: "回家先洗手", s: "放学进门第一件事" },
   { id: "study",  sec: "afternoon", ic: "📚", t: "学习时间", s: "", dyn: true },
   { id: "jump",   sec: "afternoon", ic: "🏃", t: "跳绳打卡", s: "和课程表里的跳绳是同一件事" },
@@ -134,7 +135,7 @@ var SEC_META = {
   afternoon: { name: "放学后", en: "AFTER SCHOOL" },
   night: { name: "晚上", en: "NIGHT" }
 };
-var WEEK_GOAL = 50;
+var WEEK_GOAL = 55;
 
 function todayISO() { var d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
 function todayWd() { var w = new Date().getDay(); return w === 0 ? 7 : w; }
@@ -162,7 +163,7 @@ function weekOf(dStr) {
 }
 function habitAvail(h, wd) {
   if (wd >= 1 && wd <= 5) return true;             // 工作日全项
-  if (h.id === "wash" || h.id === "study") return false;  // 周末没有放学洗手/课业复习
+  if (h.id === "wash" || h.id === "study" || h.id === "bye") return false;  // 周末无入园/课业
   return true;                                     // 其余周末都保留
 }
 function habitSub(h, wd) {
