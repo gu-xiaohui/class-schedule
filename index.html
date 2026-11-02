@@ -314,7 +314,7 @@ var DAY_NAMES = ["", "周一", "周二", "周三", "周四", "周五", "周六",
 var COLORS = ["#C0563B", "#3E5C76", "#37976D", "#8C6A4F", "#A98147", "#5C6B7A", "#8A867C"];
 
 var defaultData = {
-  v: 10,
+  v: 11,
   cards: { groups: [] },   // 识字卡片：[{id, name, cards:[{img, known}]}]
   jump: { days: { "2026-09-08": 10, "2026-09-09": 30 } },   // "2026-09-10": 180 —— 每日跳绳：日期→个数(0=只记完成)
   classes: [
@@ -336,6 +336,12 @@ var defaultData = {
     { date: "2026-09-15", classId: "c_eng", status: "attend", note: "" },
     { date: "2026-09-16", classId: "c_read", status: "attend", note: "" },
     { date: "2026-09-17", classId: "c_wushu", status: "attend", note: "" },
+    { date: "2026-09-24", classId: "c_wushu", status: "miss", note: "" },
+    { date: "2026-10-01", classId: "c_wushu", status: "miss", note: "国庆假期" },
+    { date: "2026-10-08", classId: "c_wushu", status: "miss", note: "国庆假期" },
+    { date: "2026-10-15", classId: "c_wushu", status: "attend", note: "" },
+    { date: "2026-10-22", classId: "c_wushu", status: "miss", note: "" },
+    { date: "2026-10-29", classId: "c_wushu", status: "attend", note: "" },
     { date: "2026-09-18", classId: "c_eng", status: "attend", note: "" },
     { date: "2026-09-21", classId: "c_read", status: "attend", note: "" },
     { date: "2026-09-22", classId: "c_eng", status: "attend", note: "" },
@@ -419,7 +425,24 @@ function load() {
         if (ws10 && ws10.billing === "prepaid" && typeof ws10.remaining === "number" && ws10.remaining > 0) ws10.remaining -= 1;
       }
     }
-    d.v = 10;
+    if ((d.v || 1) < 11) {
+      // v10 → v11：武术 10月对账——10/15、10/29 已上（各扣1节），9/24、10/1、10/8、10/22 缺勤不扣
+      var has11 = function (dt) { return (d.records || []).some(function (r) { return r.classId === "c_wushu" && r.date === dt; }); };
+      if (!has11("2026-10-15")) {
+        d.records.push({ date: "2026-10-15", classId: "c_wushu", status: "attend", note: "" });
+        var w15 = d.classes && d.classes.filter(function (c) { return c.id === "c_wushu"; })[0];
+        if (w15 && w15.billing === "prepaid" && typeof w15.remaining === "number" && w15.remaining > 0) w15.remaining -= 1;
+      }
+      if (!has11("2026-10-29")) {
+        d.records.push({ date: "2026-10-29", classId: "c_wushu", status: "attend", note: "" });
+        var w29 = d.classes && d.classes.filter(function (c) { return c.id === "c_wushu"; })[0];
+        if (w29 && w29.billing === "prepaid" && typeof w29.remaining === "number" && w29.remaining > 0) w29.remaining -= 1;
+      }
+      [["2026-09-24", ""], ["2026-10-01", "国庆假期"], ["2026-10-08", "国庆假期"], ["2026-10-22", ""]].forEach(function (p) {
+        if (!has11(p[0])) d.records.push({ date: p[0], classId: "c_wushu", status: "miss", note: p[1] });
+      });
+    }
+    d.v = 11;
     return d;
   } catch (e) { return JSON.parse(JSON.stringify(defaultData)); }
 }
@@ -429,7 +452,7 @@ var DB = load();
 (function persistIfMigrated() {
   var raw = localStorage.getItem(KEY);
   var stale = !raw;
-  if (raw) { try { stale = (JSON.parse(raw).v || 1) < 10; } catch (e) {} }
+  if (raw) { try { stale = (JSON.parse(raw).v || 1) < 11; } catch (e) {} }
   if (stale) save();
 })();
 
