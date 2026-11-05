@@ -314,7 +314,7 @@ var DAY_NAMES = ["", "周一", "周二", "周三", "周四", "周五", "周六",
 var COLORS = ["#C0563B", "#3E5C76", "#37976D", "#8C6A4F", "#A98147", "#5C6B7A", "#8A867C"];
 
 var defaultData = {
-  v: 11,
+  v: 12,
   cards: { groups: [] },   // 识字卡片：[{id, name, cards:[{img, known}]}]
   jump: { days: { "2026-09-08": 10, "2026-09-09": 30 } },   // "2026-09-10": 180 —— 每日跳绳：日期→个数(0=只记完成)
   classes: [
@@ -342,6 +342,7 @@ var defaultData = {
     { date: "2026-10-15", classId: "c_wushu", status: "attend", note: "" },
     { date: "2026-10-22", classId: "c_wushu", status: "miss", note: "" },
     { date: "2026-10-29", classId: "c_wushu", status: "attend", note: "" },
+    { date: "2026-11-05", classId: "c_wushu", status: "attend", note: "" },
     { date: "2026-09-18", classId: "c_eng", status: "attend", note: "" },
     { date: "2026-09-21", classId: "c_read", status: "attend", note: "" },
     { date: "2026-09-22", classId: "c_eng", status: "attend", note: "" },
@@ -442,7 +443,16 @@ function load() {
         if (!has11(p[0])) d.records.push({ date: p[0], classId: "c_wushu", status: "miss", note: p[1] });
       });
     }
-    d.v = 11;
+    if ((d.v || 1) < 12) {
+      // v11 → v12：2026-11-05（周四）武术已上，扣 1 节（已有则跳过）
+      var has12 = (d.records || []).some(function (r) { return r.classId === "c_wushu" && r.date === "2026-11-05"; });
+      if (!has12) {
+        d.records.push({ date: "2026-11-05", classId: "c_wushu", status: "attend", note: "" });
+        var w12 = d.classes && d.classes.filter(function (c) { return c.id === "c_wushu"; })[0];
+        if (w12 && w12.billing === "prepaid" && typeof w12.remaining === "number" && w12.remaining > 0) w12.remaining -= 1;
+      }
+    }
+    d.v = 12;
     return d;
   } catch (e) { return JSON.parse(JSON.stringify(defaultData)); }
 }
@@ -452,7 +462,7 @@ var DB = load();
 (function persistIfMigrated() {
   var raw = localStorage.getItem(KEY);
   var stale = !raw;
-  if (raw) { try { stale = (JSON.parse(raw).v || 1) < 11; } catch (e) {} }
+  if (raw) { try { stale = (JSON.parse(raw).v || 1) < 12; } catch (e) {} }
   if (stale) save();
 })();
 
